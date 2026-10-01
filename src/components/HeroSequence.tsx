@@ -8,16 +8,16 @@ gsap.registerPlugin(ScrollTrigger)
 
 type IdleWindow = Window & typeof globalThis & { requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number }
 
+const HOMEPAGE_FILM_IDS = new Set(['2', '3', '5', '10'])
+const HOMEPAGE_VARIANTS = HERO_VARIANTS.filter((variant) => HOMEPAGE_FILM_IDS.has(variant.id))
+
 export function HeroSequence() {
   const sectionRef = useRef<HTMLElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const copyRef = useRef<HTMLDivElement>(null)
   const reducedMotion = useReducedMotion()
-  const requestedVariant = Number(new URLSearchParams(window.location.search).get('variant') ?? '1')
-  const variantIndex = Number.isInteger(requestedVariant) && requestedVariant >= 1 && requestedVariant <= HERO_VARIANTS.length
-    ? requestedVariant - 1
-    : 0
-  const selectedVariant = HERO_VARIANTS[variantIndex]
+  const requestedVariant = new URLSearchParams(window.location.search).get('variant')
+  const selectedVariant = HOMEPAGE_VARIANTS.find((variant) => variant.id === requestedVariant) ?? HOMEPAGE_VARIANTS[0]
 
   useLayoutEffect(() => {
     const section = sectionRef.current
@@ -157,14 +157,14 @@ export function HeroSequence() {
       <div className="hero__scroll"><span>Scroll to enter</span><i /></div>
       <nav className="hero__variants" aria-label="Landing page film variations">
         <span>Film</span>
-        {HERO_VARIANTS.map((variant, index) => (
+        {HOMEPAGE_VARIANTS.map((variant, index) => (
           <a
             key={variant.id}
-            href={index === 0 ? '/' : `/?variant=${index + 1}`}
-            aria-current={index === variantIndex ? 'page' : undefined}
+            href={index === 0 ? '/' : `/?variant=${variant.id}`}
+            aria-current={variant.id === selectedVariant.id ? 'page' : undefined}
             aria-label={`View ${variant.label}`}
           >
-            {String(index + 1).padStart(2, '0')}
+            {variant.id.padStart(2, '0')}
           </a>
         ))}
       </nav>
