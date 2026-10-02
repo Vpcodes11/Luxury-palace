@@ -87,6 +87,54 @@ em { font-weight: 400; }
 .hero__index { position: absolute; right: 3.2vw; bottom: 2.5rem; font-size: .56rem; line-height: 1.7; letter-spacing: .18em; text-align: right; color: rgba(255,255,255,.72); }
 @keyframes breathe { 0%,100% { transform: scaleX(.45); opacity: .45; } 50% { transform: scaleX(1); opacity: 1; } }
 .hero--static .hero__scroll { display: none; }
+.hero__canvas { background-size: cover; background-position: center; }
+.hero__variants { max-width: calc(100% - 3rem); flex-wrap: wrap; justify-content: center; }
+.hero__variants a { min-width: 28px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+.hero__film-select { display: none; }
+section[id] { scroll-margin-top: 84px; }
+.mobile-menu { height: 100dvh; overflow-y: auto; }
+.mobile-menu nav { margin-top: clamp(2rem, 9vh, 6rem); }
+
+/* Spatial galleries and on-demand architectural model */
+.gallery-dialog { width: min(1100px, 94vw); max-height: 94dvh; padding: 2rem; border: 1px solid #a59d8d; background: var(--paper); color: var(--ink); }
+.gallery-dialog::backdrop { background: rgba(10,10,7,.88); }
+.gallery-dialog__header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.gallery-dialog h2 { font: 400 clamp(2rem, 4vw, 3.5rem)/1 var(--serif); margin: 1rem 0; }
+.gallery-dialog button { min-height: 44px; padding: .5rem; }
+.gallery-dialog figure { margin: 1rem 0; }
+.gallery-dialog img { height: min(58dvh, 580px); object-fit: contain; background: #dad3c5; }
+.gallery-dialog figcaption { margin-top: 1rem; font: 1rem/1.4 var(--serif); }
+.gallery-dialog__controls { display: flex; align-items: center; justify-content: space-between; gap: 1rem; font-size: .8rem; }
+.residence-tour { padding: 7rem 5vw; display: grid; grid-template-columns: 1fr 2fr; gap: 4vw; align-items: center; }
+.tour-heading h2 { font: 400 clamp(3rem, 5vw, 6rem)/.9 var(--serif); letter-spacing: -.045em; }
+.tour-heading > p:not(.eyebrow) { font: 1.1rem/1.6 var(--serif); }
+.tour-heading .tour-note { font: .75rem/1.6 var(--sans) !important; color: #c5bba9; }
+.tour-stage { min-width: 0; }
+.tour-preview { position: relative; height: 580px; }
+.tour-preview > img { height: 100%; object-fit: cover; filter: brightness(.7); }
+.tour-start { position: absolute; bottom: 2rem; left: 2rem; right: 2rem; padding: 1rem; color: var(--ink); background: var(--ivory); text-align: left; display: flex; justify-content: space-between; }
+.tour-placeholder { height: 580px; display: grid; place-items: center; background: #24241e; padding: 2rem; }
+.tour-canvas { height: 480px; background: #c4bba8; }
+.tour-canvas canvas { display: block; width: 100%; height: 100%; }
+.tour-controls { display: flex; flex-wrap: wrap; gap: .4rem; padding-top: 1rem; }
+.tour-controls button { min-height: 44px; min-width: 44px; padding: .65rem .8rem; border: 1px solid #726d60; font-size: .75rem; }
+.tour-controls button[aria-pressed='true'] { background: var(--ivory); color: var(--ink); }
+.tour-instructions { font-size: .75rem; line-height: 1.5; color: #c5bba9; }
+.tour-fallback p { font-size: .85rem; line-height: 1.5; }
+.footer__contact { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; border-top: 1px solid #36362c; padding-top: 1.5rem; font-size: .85rem; }
+.footer__contact p { margin: 0; }
+.footer__contact small { color: #b2a995; }
+.footer__legal a { color: inherit; }
+@media(max-width: 760px) {
+  .residence-tour { display: block; padding: 5rem 1.35rem; }
+  .tour-stage { margin-top: 3rem; }
+  .tour-preview, .tour-placeholder { height: 430px; }
+  .tour-canvas { height: 380px; }
+  .gallery-dialog { padding: 1rem; }
+  .gallery-dialog__controls > span { display: none; }
+  .footer__contact { margin-top: 2rem; display: grid; gap: .7rem; }
+  .footer__legal { flex-wrap: wrap; }
+}
 
 /* Introduction */
 .introduction { position: relative; z-index: 2; padding: 12rem 0 10rem; min-height: 130vh; }
@@ -356,6 +404,14 @@ em { font-weight: 400; }
 @media (max-width: 760px) and (max-height: 650px) {
   .hero__copy { top: 47%; }
   .hero__copy h1 { margin-block: 1rem; }
+  .hero__support { margin-top: 1.25rem; }
+}
+
+@media (max-width: 760px) {
+  .hero__variants { display: none; }
+  .hero__film-select { display: flex; position: absolute; right: 1.35rem; bottom: 4.2rem; align-items: center; gap: .75rem; font-size: .62rem; text-transform: uppercase; letter-spacing: .1em; }
+  .hero__film-select select { appearance: none; -webkit-appearance: none; color-scheme: dark; min-height: 44px; padding: .5rem 1rem; color: #fff; background: #26251e; border: 1px solid #a59d8d; border-radius: 0; font: inherit; }
+  .hero__copy { top: 46%; }
   .hero__support { margin-top: 1.25rem; }
 }
 

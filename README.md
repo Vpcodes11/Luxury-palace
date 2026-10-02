@@ -8,6 +8,8 @@ OMNIS is a cinematic, editorial website concept for an ultra-luxury Mediterranea
 
 - Scroll-driven canvas hero built from image sequences rather than autoplay video
 - Ten selectable architectural films
+- On-demand interactive conceptual 3D estate with courtyard, salon and terrace viewpoints
+- Accessible photographic galleries for all three signature spaces
 - Responsive desktop and mobile compositions
 - Animated architectural, interior, signature-space, location, and enquiry chapters
 - Accessible navigation, reduced-motion support, semantic content, and keyboard-friendly controls
@@ -28,7 +30,7 @@ OMNIS is a cinematic, editorial website concept for an ultra-luxury Mediterranea
 | 09 | Architectural craftsmanship |
 | 10 | Mediterranean entrance glide |
 
-Select a film from the hero controls or open it directly with `?variant=1` through `?variant=10`.
+Select any of the ten films from the hero controls or open it directly with `?variant=1` through `?variant=10`. Film 02 is the default.
 
 ## Technology
 
@@ -37,6 +39,9 @@ Select a film from the hero controls or open it directly with `?variant=1` throu
 - Vite
 - GSAP and ScrollTrigger
 - HTML Canvas for frame-sequence rendering
+- Three.js for the lazily loaded architectural study
+- Sharp for desktop/mobile WebP generation
+- Playwright for Chromium, Firefox and mobile WebKit verification
 
 ## Local development
 
@@ -56,7 +61,17 @@ npm run build
 npm run preview
 ```
 
-The build command regenerates the hero-frame manifest, runs the TypeScript compiler, and creates the production output in `dist`.
+The build command compresses used assets into desktop/mobile WebP images, regenerates the hero-frame manifest, prepares domain metadata, runs the TypeScript compiler, and creates production output in `dist`. Original image directories are removed from the release only; workspace sources are preserved. Hero decoding and network requests are bounded to nearby frames.
+
+## Verification and deployment
+
+```bash
+npx playwright install
+npm run build
+npm test
+```
+
+The browser suite covers all ten films, galleries, focus restoration, responsive widths, reduced motion, 3D controls, WebGL fallback, privacy and metadata. See [DEPLOYMENT.md](DEPLOYMENT.md) for static hosting, HTTPS/domain configuration and the `SITE_URL` setting that generates canonical URLs and a sitemap. No final domain is assumed.
 
 ## Asset structure
 
@@ -65,13 +80,14 @@ The repository includes the complete visual library, so no separate asset import
 ```text
 New folder/                 Original source image sequences
 public/campaign/            Curated campaign and section imagery
+public/optimized/           Generated WebP variants (not committed)
 public/hero-film-*/         Browser-ready hero sequences
 public/hero-frames-vertical Default Film 01 sequence
 public/palace-details/      Architectural detail stills
 public/variations/          Additional residence perspectives
 ```
 
-`scripts/generate-frame-manifest.mjs` scans the configured hero directories and generates `src/lib/frameManifest.generated.ts`. Run `npm run frames` whenever the hero sequence directories change.
+`scripts/generate-frame-manifest.mjs` scans the configured hero directories and generates `src/lib/frameManifest.generated.ts`. Run `npm run optimize` and then `npm run frames` whenever source images change. Development and production builds do this automatically.
 
 ## Project structure
 
@@ -89,3 +105,5 @@ public/                     Production-ready visual assets
 - The visual assets are intentionally committed to the repository for a self-contained checkout.
 - `node_modules`, `dist`, TypeScript build caches, and local logs are excluded from version control.
 - OMNIS is presented as a conceptual luxury-residence experience.
+- The 3D model is an illustrative interpretation, not a measured replica. Exact property specifications and location remain unconfirmed.
+- The displayed contact number is explicitly dummy. The enquiry form remains a local demonstration and does not send or store submissions.

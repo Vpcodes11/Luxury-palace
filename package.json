@@ -5,22 +5,29 @@
   "type": "module",
   "scripts": {
     "frames": "node scripts/generate-frame-manifest.mjs",
-    "predev": "npm run frames",
+    "predev": "npm run optimize && npm run frames",
     "dev": "vite --host 0.0.0.0",
-    "prebuild": "npm run frames",
+    "prebuild": "node scripts/generate-site-metadata.mjs && npm run optimize && npm run frames",
     "build": "tsc -b && vite build",
-    "preview": "vite preview --host 0.0.0.0"
+    "preview": "vite preview --host 0.0.0.0",
+    "optimize": "node scripts/optimize-assets.mjs",
+    "postbuild": "node scripts/prune-build-assets.mjs",
+    "test": "playwright test"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
     "gsap": "^3.13.0",
-    "vite": "latest",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "three": "^0.186.1",
+    "vite": "latest"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/react": "latest",
     "@types/react-dom": "latest",
+    "@types/three": "^0.186.0",
+    "sharp": "^0.35.5",
     "typescript": "latest"
   }
 }

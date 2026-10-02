@@ -6,3 +6,7 @@ vite.config.d.ts
 .DS_Store
 Thumbs.db
 *.log
+
+public/optimized/
+playwright-report/
+test-results/

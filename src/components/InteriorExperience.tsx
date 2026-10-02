@@ -4,7 +4,7 @@ const spaces = [
     name: 'The Grand Salon',
     description: 'A monumental living room framed by carved stone, warm light and an uninterrupted horizon.',
     detail: 'Limestone / Oak / Sea light',
-    image: '/campaign/grand-salon.jpg',
+    image: '/optimized/campaign/grand-salon.webp',
     alt: 'The limestone grand salon overlooking the sea',
   },
   {
@@ -12,7 +12,7 @@ const spaces = [
     name: 'The Primary Suite',
     description: 'Quiet materials, generous proportions and a private outlook across the Mediterranean.',
     detail: 'Linen / Travertine / Horizon',
-    image: '/campaign/primary-suite.jpg',
+    image: '/optimized/campaign/primary-suite.webp',
     alt: 'The primary suite opening to an arched sea view',
   },
   {
@@ -20,7 +20,7 @@ const spaces = [
     name: 'Courtyard Dining',
     description: 'An open-air dining room held between olive trees, arcades and still water.',
     detail: 'Stone / Water / Olive',
-    image: '/campaign/courtyard-dining.jpg',
+    image: '/optimized/campaign/courtyard-dining.webp',
     alt: 'The courtyard dining terrace beside the reflecting pool',
   },
 ]
@@ -41,7 +41,7 @@ export function InteriorExperience() {
         {spaces.map((space, index) => (
           <article key={space.name} className={`interior-folio interior-folio--${index + 1}`}>
             <div className="interior-folio__image">
-              <img src={space.image} alt={space.alt} loading={index ? 'lazy' : 'eager'} />
+              <img src={space.image} srcSet={`${space.image.replace(".webp", "-mobile.webp")} 800w, ${space.image} 1600w`} sizes="(max-width: 760px) 100vw, 65vw" alt={space.alt} loading={index ? 'lazy' : 'eager'} />
               <span className="interior-folio__frame" aria-hidden="true" />
               <span className="interior-folio__position">OMNIS / {space.number}</span>
             </div>

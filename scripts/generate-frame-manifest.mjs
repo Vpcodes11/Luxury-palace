@@ -1,5 +1,6 @@
 import { readdir, stat, mkdir, writeFile } from 'node:fs/promises'
 import { extname, join, relative, sep } from 'node:path'
+import sharp from 'sharp'
 
 const publicRoot = join(process.cwd(), 'public')
 const valid = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif'])
@@ -20,24 +21,26 @@ const sequenceFolders = [
 const variants = []
 
 for (const [index, directory] of sequenceFolders.entries()) {
-  const dir = join(publicRoot, directory)
+  const dir = join(publicRoot, 'optimized', directory)
   const entries = await readdir(dir, { withFileTypes: true })
   const images = entries
-    .filter((entry) => entry.isFile() && valid.has(extname(entry.name).toLowerCase()))
+    .filter((entry) => entry.isFile() && valid.has(extname(entry.name).toLowerCase()) && !entry.name.includes('-mobile'))
     .sort((a, b) => numberOf(a.name) - numberOf(b.name) || a.name.localeCompare(b.name))
   if (!images.length) throw new Error(`No browser-readable frames found in public/${directory}.`)
   const urls = images.map((entry) => `/${relative(publicRoot, join(dir, entry.name)).split(sep).join('/')}`)
   const sizes = await Promise.all(images.map((entry) => stat(join(dir, entry.name))))
+  const dimensions = await sharp(join(dir, images[0].name)).metadata()
   variants.push({
     id: String(index + 1),
     label: `Film ${String(index + 1).padStart(2, '0')}`,
     urls,
+    mobileUrls: urls.map(url => url.replace('.webp', '-mobile.webp')),
     meta: {
       count: urls.length,
       directory,
       totalBytes: sizes.reduce((sum, item) => sum + item.size, 0),
-      width: 1920,
-      height: 1080,
+      width: dimensions.width,
+      height: dimensions.height,
     },
   })
 }

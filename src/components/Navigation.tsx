@@ -4,6 +4,7 @@ const links = [
   ['Residence', 'introduction'],
   ['Architecture', 'architecture'],
   ['Spaces', 'spaces'],
+  ['3D tour', 'tour'],
   ['Location', 'location'],
 ] as const
 
@@ -11,6 +12,9 @@ export function Navigation() {
   const [onHero, setOnHero] = useState(true)
   const [open, setOpen] = useState(false)
   const closeRef = useRef<HTMLButtonElement>(null)
+  const toggleRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const wasOpen = useRef(false)
 
   useEffect(() => {
     const hero = document.getElementById('hero')
@@ -22,10 +26,23 @@ export function Navigation() {
 
   useEffect(() => {
     document.body.classList.toggle('menu-open', open)
-    const onKey = (event: KeyboardEvent) => event.key === 'Escape' && setOpen(false)
+    const onKey = (event: KeyboardEvent) => {
+      if (!open) return
+      if (event.key === 'Escape') setOpen(false)
+      if (event.key === 'Tab') {
+        const buttons = menuRef.current?.querySelectorAll<HTMLButtonElement>('button')
+        if (!buttons?.length) return
+        const first = buttons[0], last = buttons[buttons.length - 1]
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus() }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
+      }
+    }
     window.addEventListener('keydown', onKey)
-    if (open) closeRef.current?.focus()
+    const focusFrame = open ? requestAnimationFrame(() => closeRef.current?.focus()) : 0
+    if (!open && wasOpen.current) toggleRef.current?.focus()
+    wasOpen.current = open
     return () => {
+      cancelAnimationFrame(focusFrame)
       window.removeEventListener('keydown', onKey)
       document.body.classList.remove('menu-open')
     }
@@ -33,7 +50,7 @@ export function Navigation() {
 
   const navigate = (id: string) => {
     setOpen(false)
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    document.getElementById(id)?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' })
   }
 
   return (
@@ -43,10 +60,10 @@ export function Navigation() {
         {links.map(([label, id]) => <button key={id} onClick={() => navigate(id)}>{label}</button>)}
       </nav>
       <button className="enquire-link desktop-enquire" onClick={() => navigate('enquire')}>Enquire</button>
-      <button className="menu-toggle" onClick={() => setOpen(true)} aria-expanded={open} aria-controls="mobile-menu">
+      <button ref={toggleRef} className="menu-toggle" onClick={() => setOpen(true)} aria-expanded={open} aria-controls="mobile-menu">
         <span>Menu</span><i aria-hidden="true" />
       </button>
-      <div id="mobile-menu" className={`mobile-menu ${open ? 'is-open' : ''}`} aria-hidden={!open}>
+      <div ref={menuRef} id="mobile-menu" className={`mobile-menu ${open ? 'is-open' : ''}`} aria-hidden={!open} inert={!open} role="dialog" aria-modal={open ? true : undefined} aria-label="Navigation menu">
         <div className="mobile-menu__top">
           <span className="wordmark">OMNIS</span>
           <button ref={closeRef} className="menu-close" onClick={() => setOpen(false)}>Close</button>
@@ -55,7 +72,7 @@ export function Navigation() {
           {links.map(([label, id], index) => (
             <button key={id} onClick={() => navigate(id)}><span>0{index + 1}</span>{label}</button>
           ))}
-          <button onClick={() => navigate('enquire')}><span>05</span>Enquire</button>
+          <button onClick={() => navigate('enquire')}><span>06</span>Enquire</button>
         </nav>
       </div>
     </header>

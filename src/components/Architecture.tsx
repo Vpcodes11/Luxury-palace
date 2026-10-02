@@ -30,7 +30,7 @@ export function Architecture() {
       <div className="architecture__topline"><span>Architecture</span><span>02 / 09</span></div>
       <h2 className="architecture__word">Monumental<br /><em>without excess.</em></h2>
       <div ref={visualRef} className="architecture__visual">
-        <img src="/variations/variation_059.jpg" alt="The symmetrical arched façade of OMNIS" loading="lazy" />
+        <img src="/optimized/variations/variation_059.webp" srcSet="/optimized/variations/variation_059-mobile.webp 800w, /optimized/variations/variation_059.webp 1600w" sizes="(max-width: 760px) 100vw, 80vw" alt="The symmetrical arched façade of OMNIS" loading="lazy" />
       </div>
       <div className="architecture__note">
         <span>01</span>

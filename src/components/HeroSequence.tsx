@@ -6,10 +6,10 @@ import { useReducedMotion } from '../hooks/useReducedMotion'
 
 gsap.registerPlugin(ScrollTrigger)
 
-type IdleWindow = Window & typeof globalThis & { requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number }
 
-const HOMEPAGE_FILM_IDS = new Set(['2', '3', '5', '10'])
-const HOMEPAGE_VARIANTS = HERO_VARIANTS.filter((variant) => HOMEPAGE_FILM_IDS.has(variant.id))
+
+
+const HOMEPAGE_VARIANTS = HERO_VARIANTS
 
 export function HeroSequence() {
   const sectionRef = useRef<HTMLElement>(null)
@@ -17,7 +17,7 @@ export function HeroSequence() {
   const copyRef = useRef<HTMLDivElement>(null)
   const reducedMotion = useReducedMotion()
   const requestedVariant = new URLSearchParams(window.location.search).get('variant')
-  const selectedVariant = HOMEPAGE_VARIANTS.find((variant) => variant.id === requestedVariant) ?? HOMEPAGE_VARIANTS[0]
+  const selectedVariant = HOMEPAGE_VARIANTS.find((variant) => variant.id === requestedVariant) ?? HOMEPAGE_VARIANTS[1]
 
   useLayoutEffect(() => {
     const section = sectionRef.current
@@ -26,7 +26,7 @@ export function HeroSequence() {
     if (!section || !canvas || !copy) return
 
     const isMobile = window.matchMedia('(max-width: 600px)').matches
-    const sourceUrls = selectedVariant.urls
+    const sourceUrls = isMobile ? selectedVariant.mobileUrls : selectedVariant.urls
     const urls = isMobile
       ? sourceUrls.filter((_, index) => index === 0 || index === sourceUrls.length - 1 || index % 2 === 0)
       : [...sourceUrls]
@@ -35,6 +35,8 @@ export function HeroSequence() {
 
     const images: Array<HTMLImageElement | undefined> = new Array(urls.length)
     const pending = new Set<number>()
+    const failed = new Set<number>()
+    const queue: number[] = []
     let currentIndex = 0
     let destroyed = false
     let resizeFrame = 0
@@ -66,44 +68,60 @@ export function HeroSequence() {
       context.drawImage(image, (pixelWidth - width) / 2, (pixelHeight - height) / 2, width, height)
     }
 
-    const load = (index: number) => {
-      if (index < 0 || index >= urls.length || images[index] || pending.has(index)) return
-      pending.add(index)
-      const image = new Image()
-      image.decoding = 'async'
-      image.src = urls[index]
-      image.onload = () => {
-        if (destroyed) return
-        images[index] = image
-        pending.delete(index)
-        void image.decode?.().catch(() => undefined)
-        if (index === 0 || index === currentIndex) draw(currentIndex)
+    const pump = () => {
+      if (destroyed) return
+      while (pending.size < (isMobile ? 2 : 3) && queue.length) {
+        const index = queue.shift()!
+        if (images[index] || pending.has(index) || failed.has(index)) continue
+        pending.add(index)
+        const image = new Image()
+        image.decoding = 'async'
+        image.onload = () => {
+          if (destroyed) return
+          images[index] = image
+          pending.delete(index)
+          // Keep decoded image memory bounded even after the entire film is scrolled.
+          images.forEach((_, loadedIndex) => {
+            if (loadedIndex !== 0 && Math.abs(loadedIndex - currentIndex) > 12) images[loadedIndex] = undefined
+          })
+          void image.decode?.().catch(() => undefined)
+          draw(currentIndex)
+          pump()
+        }
+        image.onerror = () => {
+          pending.delete(index)
+          failed.add(index)
+          // A damaged first frame should not leave the arrival empty.
+          if (index === 0 && !images.some(Boolean) && urls.length > 1) load(1)
+          pump()
+        }
+        image.src = urls[index]
       }
-      image.onerror = () => pending.delete(index)
+    }
+    const load = (index: number) => {
+      if (index < 0 || index >= urls.length || images[index] || pending.has(index) || failed.has(index) || queue.includes(index)) return
+      queue.push(index)
+      pump()
     }
 
     const loadNearby = (center: number) => {
-      for (let offset = 0; offset <= 6; offset += 1) {
+      queue.length = 0
+      for (let offset = 0; offset <= 4; offset += 1) {
         load(center + offset)
         load(center - offset)
       }
     }
 
     load(0)
-    for (let index = 1; index < Math.min(10, urls.length); index += 1) load(index)
-
-    const idleWindow = window as IdleWindow
-    const backgroundLoad = () => {
-      for (let index = 0; index < urls.length; index += 1) load(index)
-    }
-    if (idleWindow.requestIdleCallback) idleWindow.requestIdleCallback(backgroundLoad, { timeout: 2200 })
-    else window.setTimeout(backgroundLoad, 800)
+    if (!reducedMotion) loadNearby(0)
 
     const resize = () => {
       cancelAnimationFrame(resizeFrame)
       resizeFrame = requestAnimationFrame(() => draw(currentIndex))
     }
     window.addEventListener('resize', resize, { passive: true })
+    copy.style.opacity = '1'
+    copy.style.transform = ''
 
     if (reducedMotion) {
       section.classList.add('hero--static')
@@ -113,6 +131,7 @@ export function HeroSequence() {
         cancelAnimationFrame(resizeFrame)
       }
     }
+    section.classList.remove('hero--static')
 
     const gsapContext = gsap.context(() => {
       ScrollTrigger.create({
@@ -146,7 +165,7 @@ export function HeroSequence() {
   }, [reducedMotion, selectedVariant])
 
   return (
-    <section id="hero" ref={sectionRef} className="hero" aria-label="OMNIS cinematic arrival">
+    <section id="hero" ref={sectionRef} className="hero" aria-label="OMNIS cinematic arrival" style={{ backgroundImage: `url(${selectedVariant.mobileUrls[0]})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
       <canvas ref={canvasRef} className="hero__canvas" aria-label={`${selectedVariant.meta.count}-frame architectural sequence, ${selectedVariant.label}`} />
       <div className="hero__shade" />
       <div ref={copyRef} className="hero__copy">
@@ -157,10 +176,10 @@ export function HeroSequence() {
       <div className="hero__scroll"><span>Scroll to enter</span><i /></div>
       <nav className="hero__variants" aria-label="Landing page film variations">
         <span>Film</span>
-        {HOMEPAGE_VARIANTS.map((variant, index) => (
+        {HOMEPAGE_VARIANTS.map((variant) => (
           <a
             key={variant.id}
-            href={index === 0 ? '/' : `/?variant=${variant.id}`}
+            href={variant.id === '2' ? '/' : `/?variant=${variant.id}`}
             aria-current={variant.id === selectedVariant.id ? 'page' : undefined}
             aria-label={`View ${variant.label}`}
           >
@@ -168,7 +187,12 @@ export function HeroSequence() {
           </a>
         ))}
       </nav>
-      <div className="hero__index" aria-hidden="true">36° N<br />04° E</div>
+      <label className="hero__film-select">Film
+        <select aria-label="Choose architectural film" value={selectedVariant.id} onChange={event => { window.location.href = event.target.value === '2' ? '/' : `/?variant=${event.target.value}` }}>
+          {HOMEPAGE_VARIANTS.map(variant => <option key={variant.id} value={variant.id}>{variant.label}</option>)}
+        </select>
+      </label>
+      <div className="hero__index" aria-hidden="true">OMNIS<br />Concept residence</div>
     </section>
   )
 }

@@ -31,7 +31,7 @@ export function Introduction() {
         </div>
       </div>
       <div ref={imageRef} className="intro__image image-frame">
-        <img src="/campaign/aerial-estate.jpg" alt="OMNIS set above the Mediterranean coastline" loading="lazy" />
+        <img src="/optimized/campaign/aerial-estate.webp" srcSet="/optimized/campaign/aerial-estate-mobile.webp 800w, /optimized/campaign/aerial-estate.webp 1600w" sizes="(max-width: 760px) 100vw, 80vw" alt="OMNIS set above the Mediterranean coastline" loading="lazy" />
         <span className="image-caption">Coastal estate / Mediterranean setting</span>
       </div>
     </section>

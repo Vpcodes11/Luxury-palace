@@ -7,6 +7,7 @@ import { Introduction } from './components/Introduction'
 import { Location } from './components/Location'
 import { Navigation } from './components/Navigation'
 import { SignatureSpaces } from './components/SignatureSpaces'
+import { ResidenceTour } from './components/ResidenceTour'
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
         <Introduction />
         <Architecture />
         <InteriorExperience />
+        <ResidenceTour />
         <SignatureSpaces />
         <Location />
         <Enquiry />

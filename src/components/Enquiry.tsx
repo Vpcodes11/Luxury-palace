@@ -24,7 +24,7 @@ export function Enquiry() {
 
   return (
     <section id="enquire" className="enquiry section-dark">
-      <img className="enquiry__image" src="/campaign/blue-hour-enquiry.jpg" alt="OMNIS illuminated and reflected across the water at blue hour" loading="lazy" />
+      <img className="enquiry__image" src="/optimized/campaign/blue-hour-enquiry.webp" srcSet="/optimized/campaign/blue-hour-enquiry-mobile.webp 800w, /optimized/campaign/blue-hour-enquiry.webp 1600w" sizes="(max-width: 760px) 100vw, 80vw" alt="OMNIS illuminated and reflected across the water at blue hour" loading="lazy" />
       <div className="enquiry__veil" />
       <div className="enquiry__heading">
         <p className="eyebrow eyebrow--light">Private enquiries</p>
