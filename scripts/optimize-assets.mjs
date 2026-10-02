@@ -2,6 +2,7 @@ import { readdir, readFile, mkdir, stat } from 'node:fs/promises'
 import { join, extname, dirname } from 'node:path'
 import sharp from 'sharp'
 import { HERO_SOURCE, HERO_RELEASE, HERO_PROFILES } from './hero-settings.mjs'
+import { prepareDuskFrame, duskModifiedTime } from './hero-dusk.mjs'
 
 const root = process.cwd()
 const publicRoot = join(root, 'public')
@@ -35,6 +36,7 @@ await scan(join(root, 'src'))
 const unique = [...new Set(jobs)]
 let originalBytes = 0, desktopBytes = 0, mobileBytes = 0
 let cursor = 0
+const lightingModified = await duskModifiedTime()
 async function worker() {
   while (cursor < unique.length) {
     const relative = unique[cursor++]
@@ -42,6 +44,7 @@ async function worker() {
     const inputStat = await stat(input)
     originalBytes += inputStat.size
     const sequence = relative.startsWith(HERO_SOURCE + '/')
+    let prepared
     const targetRelative = sequence ? relative.replace(HERO_SOURCE, HERO_RELEASE) : relative
     const base = join(publicRoot, 'optimized', targetRelative.slice(0, -extname(relative).length))
     await mkdir(dirname(base), { recursive: true })
@@ -49,8 +52,11 @@ async function worker() {
     for (const { suffix, width, height, quality } of variants) {
       const output = `${base}${suffix}.webp`
       let fresh = false
-      try { fresh = (await stat(output)).mtimeMs >= Math.max(inputStat.mtimeMs, (await stat(new URL(import.meta.url))).mtimeMs, (await stat(new URL('./hero-settings.mjs', import.meta.url))).mtimeMs) } catch {}
-      if (!fresh) await sharp(input).rotate().resize({ width, height, fit: 'cover', position: 'centre', withoutEnlargement: true }).webp({ quality, effort: sequence ? 6 : 4 }).toFile(output)
+      try { fresh = (await stat(output)).mtimeMs >= Math.max(inputStat.mtimeMs, (await stat(new URL(import.meta.url))).mtimeMs, (await stat(new URL('./hero-settings.mjs', import.meta.url))).mtimeMs, sequence ? lightingModified : 0) } catch {}
+      if (!fresh) {
+        if (sequence && !prepared) prepared = await prepareDuskFrame(input, Number(relative.match(/frame_(\d+)/)?.[1]))
+        await (prepared ? prepared.clone() : sharp(input)).rotate().resize({ width, height, fit: 'cover', position: 'centre', withoutEnlargement: true }).webp({ quality, effort: sequence ? 6 : 4 }).toFile(output)
+      }
       const size = (await stat(output)).size
       if (suffix) mobileBytes += size; else desktopBytes += size
     }
