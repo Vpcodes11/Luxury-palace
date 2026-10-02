@@ -8,6 +8,7 @@ Thumbs.db
 *.log
 
 public/optimized/
+public/sitemap.xml
 playwright-report/
 test-results/
 performance-results/

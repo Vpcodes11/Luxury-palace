@@ -1,6 +1,6 @@
 import { writeFile, rm } from 'node:fs/promises'
 
-const raw = process.env.SITE_URL || process.env.URL
+const raw = process.env.SITE_URL || process.env.URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : '')
 if (!raw) {
   await rm('public/sitemap.xml', { force: true })
   await writeFile('public/robots.txt', 'User-agent: *\nAllow: /\n')

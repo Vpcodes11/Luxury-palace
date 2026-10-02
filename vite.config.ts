@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => {
   plugins: [react(), {
     name: 'site-domain',
     transformIndexHtml(html) {
-      const site = environment.SITE_URL || environment.URL
+      const site = environment.SITE_URL || environment.URL || (environment.VERCEL_PROJECT_PRODUCTION_URL ? `https://${environment.VERCEL_PROJECT_PRODUCTION_URL}` : '')
       if (!site) return html
       const origin = new URL(site).origin
       return html.replace('content="/optimized/campaign/blue-hour-enquiry.webp"', `content="${origin}/optimized/campaign/blue-hour-enquiry.webp"`).replace('</head>', `<link rel="canonical" href="${origin}/" /><meta property="og:url" content="${origin}/" /></head>`)
