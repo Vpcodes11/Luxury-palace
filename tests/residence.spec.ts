@@ -166,8 +166,9 @@ test('film loading stays bounded and works when scrolling forward and back', asy
 
 test('decoded film stays ready for reverse scrolling without extra frame downloads', async ({ page }) => {
   await page.goto('/')
-  await expect.poll(() => page.evaluate(() => performance.getEntriesByType('resource').filter(entry => /hero-film-02-architecture-hq\/frame_/.test(entry.name)).length), { timeout: 20000 }).toBe(41)
+  await expect.poll(() => page.evaluate(() => new Set(performance.getEntriesByType('resource').filter(entry => /hero-film-02-architecture-hq\/frame_/.test(entry.name)).map(entry => entry.name)).size), { timeout: 20000 }).toBe(41)
   await page.waitForTimeout(300)
+  const preparedRequests = await page.evaluate(() => performance.getEntriesByType('resource').filter(entry => /hero-film-02-architecture-hq\/frame_/.test(entry.name)).length)
   await expect(page.locator('.pin-spacer')).toHaveCount(0)
   await expect(page.locator('.hero')).toHaveCSS('position', 'sticky')
   const buffer = await page.locator('.hero__canvas').evaluate((canvas: HTMLCanvasElement) => ({ width: canvas.width, height: canvas.height, mobile: matchMedia('(max-width: 760px)').matches }))
@@ -179,7 +180,9 @@ test('decoded film stays ready for reverse scrolling without extra frame downloa
   await page.evaluate(() => window.scrollTo(0, 0))
   await expect(page.locator('.hero__canvas')).toHaveAttribute('data-frame', '0')
   const frames = await page.evaluate(() => performance.getEntriesByType('resource').filter(entry => /hero-film-02-architecture-hq\/frame_/.test(entry.name)).length)
-  expect(frames).toBe(41)
+  // The poster and worker's compressed-blob read may share one cached URL.
+  // Reversing the film must not request it or any other frame again.
+  expect(frames).toBe(preparedRequests)
   expect(requests).toBeGreaterThan(41)
 })
 

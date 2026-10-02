@@ -25,6 +25,14 @@ for (const mode of ['desktop', 'mobile']) {
   page.on('pageerror', error => errors.push(error.message))
   await page.addInitScript(() => {
     window.__profile = { tasks: [], lcp: 0, draws: [], bitmapSyncMs: [], drawSyncMs: [] }
+    new MutationObserver(records => {
+      for (const record of records) {
+        const canvas = record.target
+        if (canvas.dataset?.renderer === 'worker' && canvas.dataset.frame !== undefined) {
+          window.__profile.draws.push({ time: performance.now(), src: `hero-film-worker-frame-${canvas.dataset.frame}` })
+        }
+      }
+    }).observe(document, { subtree: true, attributes: true, attributeFilter: ['data-frame'] })
     const bitmapSources = new WeakMap()
     let anonymousBitmap = 0
     const originalFetch = window.fetch.bind(window)
