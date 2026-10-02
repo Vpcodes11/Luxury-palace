@@ -47,7 +47,7 @@ em { font-weight: 400; }
   color: var(--ink); mix-blend-mode: normal; transition: color .55s ease, background .55s ease, height .4s ease;
   background: rgba(247,245,238,.94);
 }
-.site-nav--hero { color: #fff; background: transparent; backdrop-filter: none; }
+.site-nav--hero { color: #fff; background: linear-gradient(180deg, rgba(10,10,7,.3), transparent); backdrop-filter: none; text-shadow: 0 1px 3px rgba(10,10,7,.75); }
 .wordmark { justify-self: start; font-size: 1rem; letter-spacing: .42em; font-weight: 600; }
 .desktop-nav { display: flex; align-items: center; gap: clamp(1.2rem, 2.8vw, 3rem); }
 .desktop-nav button, .enquire-link { font-size: .65rem; letter-spacing: .15em; text-transform: uppercase; }
