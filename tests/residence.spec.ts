@@ -1,25 +1,19 @@
 import { expect, test } from '@playwright/test'
 
-test('only approved homepage films are selectable with no missing assets', async ({ page }) => {
-  const missing: string[] = [], errors: string[] = []
+test('homepage uses only finalized Film 02 without selectors or missing assets', async ({ page }) => {
+  const missing: string[] = [], errors: string[] = [], filmRequests: string[] = []
   page.on('response', response => { if (response.status() >= 400) missing.push(response.url()) })
   page.on('pageerror', error => errors.push(error.message))
-  for (const film of [2, 3, 5, 10]) {
-    await page.goto(`/?variant=${film}`)
-    await expect(page.locator('.hero__variants a')).toHaveCount(4)
-    await expect(page.locator('.hero__film-select option')).toHaveText(['Film 02', 'Film 03', 'Film 05', 'Film 10'])
-    await expect(page.locator('.hero__variants [aria-current="page"]')).toHaveText(String(film).padStart(2, '0'))
+  page.on('request', request => { if (/optimized\/hero-.*\.webp/.test(request.url())) filmRequests.push(request.url()) })
+  for (const query of ['', '?variant=1', '?variant=2', '?variant=3', '?variant=4', '?variant=5', '?variant=6', '?variant=7', '?variant=8', '?variant=9', '?variant=10']) {
+    await page.goto('/' + query)
+    await expect(page.locator('.hero__variants, .hero__film-select')).toHaveCount(0)
+    await expect(page.locator('.hero__canvas')).toHaveAttribute('aria-label', /Film 02/)
     await expect.poll(() => page.locator('.hero__canvas').evaluate((canvas: HTMLCanvasElement) => canvas.width)).toBeGreaterThan(500)
   }
+  expect(filmRequests.length).toBeGreaterThan(0)
+  expect(filmRequests.every(url => url.includes('/hero-film-02-architecture/'))).toBe(true)
   expect(missing).toEqual([]); expect(errors).toEqual([])
-})
-
-test('removed film links fall back to approved Film 02', async ({ page }) => {
-  for (const film of [1, 4, 6, 7, 8, 9]) {
-    await page.goto(`/?variant=${film}`)
-    await expect(page.locator('.hero__variants [aria-current="page"]')).toHaveText('02')
-    await expect(page.getByRole('combobox', { name: 'Choose architectural film', includeHidden: true })).toHaveValue('2')
-  }
 })
 
 test('galleries open, advance, trap focus and return focus', async ({ page }) => {
@@ -44,9 +38,6 @@ test('galleries open, advance, trap focus and return focus', async ({ page }) =>
 test('navigation is accessible and layout fits narrow screens', async ({ page, isMobile }) => {
   await page.goto('/')
   if (isMobile) {
-    await expect(page.getByRole('combobox', { name: 'Choose architectural film' })).toBeVisible()
-    await page.getByRole('combobox', { name: 'Choose architectural film' }).selectOption('10')
-    await expect(page).toHaveURL(/variant=10/)
     const menu = page.getByRole('button', { name: 'Menu', exact: true })
     await menu.click()
     await expect(page.getByRole('button', { name: 'Close', exact: true })).toBeFocused()

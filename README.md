@@ -7,7 +7,7 @@ OMNIS is a cinematic, editorial website concept for an ultra-luxury Mediterranea
 ## Experience
 
 - Scroll-driven canvas hero built from image sequences rather than autoplay video
-- Four approved homepage films: 02, 03, 05 and 10
+- Finalized homepage Film 02, without film selectors
 - On-demand interactive conceptual 3D estate with courtyard, salon and terrace viewpoints
 - Accessible photographic galleries for all three signature spaces
 - Responsive desktop and mobile compositions
@@ -30,7 +30,7 @@ OMNIS is a cinematic, editorial website concept for an ultra-luxury Mediterranea
 | 09 | Architectural craftsmanship |
 | 10 | Mediterranean entrance glide |
 
-The asset library contains ten films, but the finalized homepage offers only Films 02, 03, 05 and 10. Film 02 is the default. Links to removed films fall back to Film 02.
+The asset library contains ten source films. The finalized homepage exclusively uses Film 02 and has no film selectors. Legacy variant links also render Film 02.
 
 ## Technology
 
@@ -71,7 +71,7 @@ npm run build
 npm test
 ```
 
-The browser suite covers the four approved homepage films, fallback for removed films, galleries, focus restoration, responsive widths, reduced motion, 3D controls, WebGL fallback, privacy and metadata. See [DEPLOYMENT.md](DEPLOYMENT.md) for static hosting, HTTPS/domain configuration and the `SITE_URL` setting that generates canonical URLs and a sitemap. No final domain is assumed.
+The browser suite covers the finalized Film 02 homepage and legacy variant links, galleries, focus restoration, responsive widths, reduced motion, 3D controls, WebGL fallback, privacy and metadata. See [DEPLOYMENT.md](DEPLOYMENT.md) for static hosting, HTTPS/domain configuration and the `SITE_URL` setting that generates canonical URLs and a sitemap. No final domain is assumed.
 
 ## Asset structure
 

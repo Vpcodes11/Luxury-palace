@@ -5,16 +5,14 @@ import { HERO_VARIANTS } from '../lib/frameManifest.generated'
 import { useReducedMotion } from '../hooks/useReducedMotion'
 
 gsap.registerPlugin(ScrollTrigger)
-const HOMEPAGE_FILM_IDS = new Set(['2', '3', '5', '10'])
-const HOMEPAGE_VARIANTS = HERO_VARIANTS.filter(variant => HOMEPAGE_FILM_IDS.has(variant.id))
+const HOMEPAGE_FILM = HERO_VARIANTS.find(variant => variant.id === '2')!
 
 export function HeroSequence() {
   const sectionRef = useRef<HTMLElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const copyRef = useRef<HTMLDivElement>(null)
   const reducedMotion = useReducedMotion()
-  const requestedVariant = new URLSearchParams(window.location.search).get('variant')
-  const selectedVariant = HOMEPAGE_VARIANTS.find((variant) => variant.id === requestedVariant) ?? HOMEPAGE_VARIANTS[0]
+  const selectedVariant = HOMEPAGE_FILM
 
   useLayoutEffect(() => {
     const section = sectionRef.current
@@ -171,24 +169,6 @@ export function HeroSequence() {
         <p className="hero__support">A private Mediterranean residence shaped by light, stone and sea.</p>
       </div>
       <div className="hero__scroll"><span>Scroll to enter</span><i /></div>
-      <nav className="hero__variants" aria-label="Landing page film variations">
-        <span>Film</span>
-        {HOMEPAGE_VARIANTS.map((variant) => (
-          <a
-            key={variant.id}
-            href={variant.id === '2' ? '/' : `/?variant=${variant.id}`}
-            aria-current={variant.id === selectedVariant.id ? 'page' : undefined}
-            aria-label={`View ${variant.label}`}
-          >
-            {variant.id.padStart(2, '0')}
-          </a>
-        ))}
-      </nav>
-      <label className="hero__film-select">Film
-        <select aria-label="Choose architectural film" value={selectedVariant.id} onChange={event => { window.location.href = event.target.value === '2' ? '/' : `/?variant=${event.target.value}` }}>
-          {HOMEPAGE_VARIANTS.map(variant => <option key={variant.id} value={variant.id}>{variant.label}</option>)}
-        </select>
-      </label>
       <div className="hero__index" aria-hidden="true">OMNIS<br />Concept residence</div>
     </section>
   )
