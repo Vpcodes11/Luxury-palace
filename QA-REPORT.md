@@ -1,6 +1,6 @@
 # Website test report — 2 October 2026
 
-The production build passed and all **57 browser checks passed**, covering 19 scenarios in desktop Chromium, desktop Firefox, and iPhone 13 WebKit emulation. The final run used no automatic retries. These results apply to the locally served production output built from the code in this audit.
+The production build passed. The local audit passed **57 browser checks**, and the subsequent public production audit passed **all 60 checks** at `https://luxurypalace.vercel.app/`, covering 20 scenarios in desktop Chromium, desktop Firefox, and iPhone 13 WebKit emulation. Both final runs used no automatic retries. The live run tested the production release from commit `5ad2acca56e3a8cc7c131dd3390060fed3b460ca`.
 
 ## Confirmed behavior
 
@@ -12,6 +12,7 @@ The production build passed and all **57 browser checks passed**, covering 19 sc
 - Page imagery loads without missing resources or runtime exceptions in the tested journeys. Layout checks pass at 320, 390, 768 and 1440 pixels.
 - Reduced motion and data saver use the static poster. Forward/reverse animation scrolling works, with bounded frame downloads.
 - Privacy links, the return link, favicon, social image and dummy contact are present.
+- The public production origin is canonical, the social image has an absolute production URL, and robots.txt links to the published sitemap. These checks pass in all three browser projects.
 - Manual browser review covered the desktop homepage, rendered 3D estate, mobile menu, mobile enquiry section and mobile homepage.
 - `npm audit --omit=dev` reported zero known vulnerabilities. This is a dependency check, not a penetration test.
 
@@ -20,6 +21,7 @@ The production build passed and all **57 browser checks passed**, covering 19 sc
 1. Mobile Safari intermittently missed focus while the menu panel opened. Focus now avoids scrolling and is restored after the opening transition when necessary. Repeated-opening checks pass.
 2. The enquiry form accepted phone values consisting only of punctuation or whitespace. It now requires 7–15 digits when a phone is supplied.
 3. The local enquiry demonstration misleadingly claimed a representative would respond. Both the form and confirmation now state that enquiries are not sent or stored. Validation focuses the first invalid field; confirmation and reset also restore useful focus.
+4. The public production domain lacked canonical URLs and a sitemap. The build now detects Vercel's permanent production domain and generates the canonical/social URLs, sitemap and robots.txt correctly. Hosted metadata checks pass.
 
 The test suite also corrected screenshot scaling for the long mobile page and replaced an unsupported mobile-WebKit mouse-wheel simulation with a mobile navigation check. Desktop wheel behavior remains tested. A slow-load WebKit check failed once in an earlier concurrent run; its isolated repeats and the final complete run passed. This timing behavior should remain covered in future runs.
 
@@ -40,11 +42,23 @@ Raw measurements: `performance-results/qa-warm-performance.json` and `performanc
 
 ## Deployment verification and limits
 
-The previously deployed GitHub commit `c6e20712a3af1082f20fea0a86bb02db46042398` was associated with a successful Vercel deployment at `https://luxury-palace-lo3dpby3v-vnss-projects-dc1cff4f.vercel.app/`. Opening that exact address in the test browser redirects to Vercel login, so this audit cannot claim a completed live-site browser test. GitHub/Vercel deployment success is separate from browser verification of the hosted page.
+The confirmed public production address is **https://luxurypalace.vercel.app/**. It opens without Vercel login and serves the latest tested application. Unique deployment links encountered earlier required login; that blocker is resolved by using the permanent public domain.
 
-After this audit is pushed, use the new successful deployment associated with that commit. A unique older Vercel deployment URL continues to serve its original build. Opening it cannot verify the latest changes.
+The first hosted run completed 56 checks before two overlapping test processes conflicted while writing trace artifacts. This was a test-runner filesystem conflict. The final sequential full run completed **60/60 checks successfully in 2.7 minutes**, including all domain-metadata checks. Future browser runs should not share an output directory concurrently.
 
-Public enquiry delivery remains intentionally unconnected. No final public domain was supplied, so canonical URLs and sitemap generation still await `SITE_URL`. Physical-device touch gestures, actual iOS Safari, and live-origin loading/caching remain outside these emulation results.
+The Vercel metadata fix uses `VERCEL_PROJECT_PRODUCTION_URL` when `SITE_URL` or Netlify's `URL` is absent. Hosted HTML, the canonical and social URLs, sitemap and robots.txt were independently inspected after deployment. The application JavaScript bundle remained `index-eO_WVyUq.js`; the domain fix changed generated metadata. Optimized image responses return HTTP 200 with `Cache-Control: public, max-age=86400, stale-while-revalidate=604800` and a Vercel cache hit.
+
+Use the permanent domain for future review. A unique older deployment URL continues to serve its original build, regardless of later GitHub pushes.
+
+Public enquiry delivery remains intentionally unconnected, and the contact number remains clearly dummy. The site is suitable as a public concept/demo; real enquiries require a contact destination and backend. Physical-device touch gestures and actual iOS Safari remain outside these emulation results.
+
+## Live-origin performance follow-up
+
+The same 4 Mbps / 80 ms latency / 4× CPU slowdown profile was repeated on the public domain. After 10 seconds of preparation, desktop and mobile both recorded a 16.7 ms 95th-percentile frame interval, zero long tasks during the 10-second scroll, and 40 distinct hero frames drawn. Maximum intervals were 33.4 ms on desktop and 16.8 ms on mobile. The first animated frame appeared at approximately 1.6 seconds on desktop and 1.9 seconds on mobile. Both runs recorded no runtime errors.
+
+Starting the hosted scroll immediately at document readiness recorded a 16.8 ms 95th-percentile interval on both devices, but the longest desktop interval reached 100 ms with 14 long tasks and 21 distinct film frames drawn. Mobile reached 50 ms, with zero long tasks and 27 distinct frames. Both immediate runs recorded no runtime errors. Brief initial loading/decoding hitches remain under this stress profile; prepared results do not imply hitch-free scrolling immediately on arrival.
+
+Raw hosted measurements are in `performance-results/qa-live-warm-performance.json` and `performance-results/qa-live-immediate-performance.json`.
 
 ## Reproduce
 
@@ -54,5 +68,7 @@ npm run build
 npx playwright install
 npm test -- --reporter=list,html
 ```
+
+For public production tests, set `PLAYWRIGHT_BASE_URL=https://luxurypalace.vercel.app`, then run `npm test -- --reporter=list,html --output=test-results/live-final`. The preview server is skipped. Unset that variable to return to local testing.
 
 For the performance comparison, start the production preview on port 4175, set `PROFILE_CPU_THROTTLE=4`, and run `node scripts/profile-performance.mjs http://127.0.0.1:4175 comparison`. Set `PROFILE_WARMUP_MS=0` for immediate scrolling; omit it for the default 10-second preparation period.
