@@ -1,16 +1,25 @@
 import { expect, test } from '@playwright/test'
 
-test('all ten films work with bounded loading and no missing assets', async ({ page }) => {
+test('only approved homepage films are selectable with no missing assets', async ({ page }) => {
   const missing: string[] = [], errors: string[] = []
   page.on('response', response => { if (response.status() >= 400) missing.push(response.url()) })
   page.on('pageerror', error => errors.push(error.message))
-  for (let film = 1; film <= 10; film++) {
+  for (const film of [2, 3, 5, 10]) {
     await page.goto(`/?variant=${film}`)
-    await expect(page.locator('.hero__variants a')).toHaveCount(10)
+    await expect(page.locator('.hero__variants a')).toHaveCount(4)
+    await expect(page.locator('.hero__film-select option')).toHaveText(['Film 02', 'Film 03', 'Film 05', 'Film 10'])
     await expect(page.locator('.hero__variants [aria-current="page"]')).toHaveText(String(film).padStart(2, '0'))
     await expect.poll(() => page.locator('.hero__canvas').evaluate((canvas: HTMLCanvasElement) => canvas.width)).toBeGreaterThan(500)
   }
   expect(missing).toEqual([]); expect(errors).toEqual([])
+})
+
+test('removed film links fall back to approved Film 02', async ({ page }) => {
+  for (const film of [1, 4, 6, 7, 8, 9]) {
+    await page.goto(`/?variant=${film}`)
+    await expect(page.locator('.hero__variants [aria-current="page"]')).toHaveText('02')
+    await expect(page.getByRole('combobox', { name: 'Choose architectural film', includeHidden: true })).toHaveValue('2')
+  }
 })
 
 test('galleries open, advance, trap focus and return focus', async ({ page }) => {

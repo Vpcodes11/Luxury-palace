@@ -5,11 +5,8 @@ import { HERO_VARIANTS } from '../lib/frameManifest.generated'
 import { useReducedMotion } from '../hooks/useReducedMotion'
 
 gsap.registerPlugin(ScrollTrigger)
-
-
-
-
-const HOMEPAGE_VARIANTS = HERO_VARIANTS
+const HOMEPAGE_FILM_IDS = new Set(['2', '3', '5', '10'])
+const HOMEPAGE_VARIANTS = HERO_VARIANTS.filter(variant => HOMEPAGE_FILM_IDS.has(variant.id))
 
 export function HeroSequence() {
   const sectionRef = useRef<HTMLElement>(null)
@@ -17,7 +14,7 @@ export function HeroSequence() {
   const copyRef = useRef<HTMLDivElement>(null)
   const reducedMotion = useReducedMotion()
   const requestedVariant = new URLSearchParams(window.location.search).get('variant')
-  const selectedVariant = HOMEPAGE_VARIANTS.find((variant) => variant.id === requestedVariant) ?? HOMEPAGE_VARIANTS[1]
+  const selectedVariant = HOMEPAGE_VARIANTS.find((variant) => variant.id === requestedVariant) ?? HOMEPAGE_VARIANTS[0]
 
   useLayoutEffect(() => {
     const section = sectionRef.current
