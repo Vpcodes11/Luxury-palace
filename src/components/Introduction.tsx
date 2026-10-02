@@ -13,8 +13,8 @@ export function Introduction() {
   useLayoutEffect(() => {
     if (reduced || !sectionRef.current || !imageRef.current) return
     const context = gsap.context(() => {
-      gsap.fromTo(imageRef.current, { width: '70%' }, {
-        width: '88%', duration: 1.5, ease: 'power3.out',
+      gsap.fromTo(imageRef.current, { scale: 0.8 }, {
+        scale: 1, duration: 1.5, ease: 'power3.out',
         scrollTrigger: { trigger: imageRef.current, start: 'top 88%', toggleActions: 'play none none reverse' },
       })
     }, sectionRef)

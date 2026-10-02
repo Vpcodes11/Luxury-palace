@@ -50,7 +50,7 @@ export function Navigation() {
 
   const navigate = (id: string) => {
     setOpen(false)
-    document.getElementById(id)?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' })
+    document.getElementById(id === 'hero' ? 'hero-track' : id)?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' })
   }
 
   return (

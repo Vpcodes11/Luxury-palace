@@ -13,7 +13,7 @@ OMNIS is a cinematic, editorial website concept for an ultra-luxury Mediterranea
 - Responsive desktop and mobile compositions
 - Animated architectural, interior, signature-space, location, and enquiry chapters
 - Accessible navigation, reduced-motion support, semantic content, and keyboard-friendly controls
-- Optimized frame loading with generated sequence metadata
+- A 41-frame Film 02 sequence with preloaded poster, progressive decoding and native sticky scrolling
 
 ## Hero films
 
@@ -61,7 +61,7 @@ npm run build
 npm run preview
 ```
 
-The build command compresses used assets into desktop/mobile WebP images, regenerates the hero-frame manifest, prepares domain metadata, runs the TypeScript compiler, and creates production output in `dist`. Original image directories are removed from the release only; workspace sources are preserved. Hero decoding and network requests are bounded to nearby frames.
+The build command compresses used assets into desktop/mobile WebP images, regenerates the Film 02 manifest, prepares domain metadata, runs the TypeScript compiler, and creates production output in `dist`. Unselected sequences and original image directories are excluded from the release; workspace sources are preserved. The hero uses native sticky positioning, a viewport-specific preloaded poster, 41 compressed frames and two low-priority requests at a time. Decoded ImageBitmaps are retained for reverse scrolling where supported, with HTML images as a fallback. Canvas size is cached on resize, desktop resolution is bounded by the source detail, and mobile device pixel ratio is capped at one. Data-saver, 2G and reduced-motion visitors receive a static poster with ordinary scrolling.
 
 ## Verification and deployment
 
@@ -72,6 +72,8 @@ npm test
 ```
 
 The browser suite covers the finalized Film 02 homepage and legacy variant links, galleries, focus restoration, responsive widths, reduced motion, 3D controls, WebGL fallback, privacy and metadata. See [DEPLOYMENT.md](DEPLOYMENT.md) for static hosting, HTTPS/domain configuration and the `SITE_URL` setting that generates canonical URLs and a sitemap. No final domain is assumed.
+
+For a reproducible Chromium performance profile, run a production preview and `node scripts/profile-performance.mjs http://localhost:4173 comparison`. Set `PROFILE_CPU_THROTTLE=4` for CPU throttling; the script uses a cold cache, 4 Mbps throughput and 80 ms latency. Reports live in ignored `performance-results`. Emulation measures loading and actual hero drawing but does not replace real-device or deployed-origin testing.
 
 ## Asset structure
 

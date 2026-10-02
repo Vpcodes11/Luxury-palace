@@ -13,3 +13,5 @@ The final domain and hosting account have not been supplied, so no public deploy
 OMNIS remains a concept. Exact location, dimensions, room counts and public contact details have not been supplied. The visible number is labeled as dummy and is not linked to a dialer. The 3D model is a procedural architectural interpretation, not a surveyed replica.
 
 The enquiry form remains a local demonstration, as requested. Review privacy.html when connecting a form provider, analytics, or the final host.
+
+Vercel can use its Vite preset with `npm run build` and output directory `dist`. `vercel.json` configures caching for optimized images. The final release includes only Film 02 and section/gallery stills; no film selector is exposed. Set `SITE_URL` to the production HTTPS origin for canonical and social URLs.

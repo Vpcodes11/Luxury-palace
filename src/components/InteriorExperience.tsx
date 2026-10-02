@@ -41,7 +41,7 @@ export function InteriorExperience() {
         {spaces.map((space, index) => (
           <article key={space.name} className={`interior-folio interior-folio--${index + 1}`}>
             <div className="interior-folio__image">
-              <img src={space.image} srcSet={`${space.image.replace(".webp", "-mobile.webp")} 800w, ${space.image} 1600w`} sizes="(max-width: 760px) 100vw, 65vw" alt={space.alt} loading={index ? 'lazy' : 'eager'} />
+              <img src={space.image} srcSet={`${space.image.replace(".webp", "-mobile.webp")} 800w, ${space.image} 1600w`} sizes="(max-width: 760px) 100vw, 65vw" alt={space.alt} loading="lazy" decoding="async" />
               <span className="interior-folio__frame" aria-hidden="true" />
               <span className="interior-folio__position">OMNIS / {space.number}</span>
             </div>

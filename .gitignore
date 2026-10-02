@@ -10,3 +10,4 @@ Thumbs.db
 public/optimized/
 playwright-report/
 test-results/
+performance-results/

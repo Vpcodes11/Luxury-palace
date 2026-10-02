@@ -4,7 +4,7 @@ const footerLinks = [
 ]
 
 export function Footer() {
-  const go = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })
+  const go = (id: string) => document.getElementById(id === 'hero' ? 'hero-track' : id)?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })
   return (
     <footer className="footer">
       <div className="footer__brand">OMNIS</div>
