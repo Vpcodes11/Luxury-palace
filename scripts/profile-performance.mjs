@@ -5,6 +5,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 const url = process.argv[2] || 'http://127.0.0.1:4175'
 const label = process.argv[3] || 'profile'
 const cpuRate = Number(process.env.PROFILE_CPU_THROTTLE || 1)
+const warmupMs = Number(process.env.PROFILE_WARMUP_MS ?? 10000)
 const results = []
 const browser = await chromium.launch({ args: ['--enable-unsafe-swiftshader'] })
 for (const mode of ['desktop', 'mobile']) {
@@ -49,7 +50,7 @@ for (const mode of ['desktop', 'mobile']) {
     }).observe({ type: 'largest-contentful-paint', buffered: true })
   })
   await page.goto(url, { waitUntil: 'domcontentloaded' })
-  await page.waitForTimeout(10000)
+  if (warmupMs > 0) await page.waitForTimeout(warmupMs)
   const initial = await page.evaluate(() => {
     const entries = performance.getEntriesByType('resource')
     const images = entries.filter(entry => /\.(webp|jpg|png)(\?|$)/.test(entry.name))
@@ -87,6 +88,8 @@ for (const mode of ['desktop', 'mobile']) {
     const images = performance.getEntriesByType('resource').filter(entry => /\.(webp|jpg|png)(\?|$)/.test(entry.name))
     return {
       sampleSeconds: 10, scrollDistancePx: endY, sampledFrames: durations.length,
+      firstHeroDrawMs: Math.round(window.__profile.draws[0]?.time || 0),
+      observedLcpMs: Math.round(window.__profile.lcp),
       p95FrameIntervalMs: +ordered[Math.floor(ordered.length * 0.95)].toFixed(1),
       maxFrameIntervalMs: +Math.max(...durations).toFixed(1),
       intervalsAbove33ms: durations.filter(value => value > 33).length,
@@ -99,7 +102,7 @@ for (const mode of ['desktop', 'mobile']) {
       totalCompletedImageTransferKB: Math.round(images.reduce((sum, item) => sum + item.transferSize, 0) / 1000),
     }
   })
-  const result = { mode, network: `4 Mbps / 80 ms latency, cold cache, CPU throttle ${cpuRate}x`, initial, scroll, errors }
+  const result = { mode, network: `4 Mbps / 80 ms latency, cold cache, CPU throttle ${cpuRate}x`, warmupMs, initial, scroll, errors }
   results.push(result)
   console.log(JSON.stringify(result))
   await context.close()

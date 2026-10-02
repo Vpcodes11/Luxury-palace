@@ -247,6 +247,7 @@ section[id] { scroll-margin-top: 84px; }
 .enquiry__heading > p:last-child { font-family: var(--serif); font-size: 1.15rem; color: rgba(255,255,255,.75); }
 .enquiry__form-wrap { padding: 3rem; background: rgba(238,234,223,.96); color: var(--ink); }
 .enquiry form > p { margin: 0 0 2.8rem; font-family: var(--serif); font-size: 2rem; }
+.enquiry form > .enquiry__demo { margin: -1.5rem 0 2rem; font-family: var(--sans); font-size: .8rem; line-height: 1.5; }
 .field { position: relative; padding: .8rem 0; border-bottom: 1px solid rgba(27,27,23,.35); }
 .field label { display: flex; justify-content: space-between; font-size: .57rem; letter-spacing: .16em; text-transform: uppercase; }
 .field label span { color: #7a7469; }

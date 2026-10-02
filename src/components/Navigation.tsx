@@ -38,7 +38,7 @@ export function Navigation() {
       }
     }
     window.addEventListener('keydown', onKey)
-    const focusFrame = open ? requestAnimationFrame(() => closeRef.current?.focus()) : 0
+    const focusFrame = open ? requestAnimationFrame(() => closeRef.current?.focus({ preventScroll: true })) : 0
     if (!open && wasOpen.current) toggleRef.current?.focus()
     wasOpen.current = open
     return () => {
@@ -63,7 +63,10 @@ export function Navigation() {
       <button ref={toggleRef} className="menu-toggle" onClick={() => setOpen(true)} aria-expanded={open} aria-controls="mobile-menu">
         <span>Menu</span><i aria-hidden="true" />
       </button>
-      <div ref={menuRef} id="mobile-menu" className={`mobile-menu ${open ? 'is-open' : ''}`} aria-hidden={!open} inert={!open} role="dialog" aria-modal={open ? true : undefined} aria-label="Navigation menu">
+      <div ref={menuRef} id="mobile-menu" className={`mobile-menu ${open ? 'is-open' : ''}`} aria-hidden={!open} inert={!open} role="dialog" aria-modal={open ? true : undefined} aria-label="Navigation menu" onTransitionEnd={event => {
+        // Safari can ignore focus while the opening panel is still offscreen.
+        if (open && event.target === event.currentTarget && event.propertyName === 'transform' && !event.currentTarget.contains(document.activeElement)) closeRef.current?.focus({ preventScroll: true })
+      }}>
         <div className="mobile-menu__top">
           <span className="wordmark">OMNIS</span>
           <button ref={closeRef} className="menu-close" onClick={() => setOpen(false)}>Close</button>
