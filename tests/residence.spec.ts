@@ -12,7 +12,7 @@ test('homepage uses only finalized Film 02 without selectors or missing assets',
     await expect(page.locator('.hero__canvas')).toHaveAttribute('data-frame', /\d+/)
   }
   expect(filmRequests.length).toBeGreaterThan(0)
-  expect(filmRequests.every(url => url.includes('/hero-film-02-architecture/'))).toBe(true)
+  expect(filmRequests.every(url => url.includes('/hero-film-02-architecture-hq/'))).toBe(true)
   expect(missing).toEqual([]); expect(errors).toEqual([])
 })
 
@@ -58,8 +58,63 @@ test('arrival remains visible while film requests are slow', async ({ page }) =>
   await page.route('**/optimized/hero-*/**/*.webp', async route => { await new Promise(resolve => setTimeout(resolve, 250)); await route.continue() })
   await page.goto('/')
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
-  await expect(page.locator('.hero__poster')).toHaveAttribute('src', /frame_000(-mobile)?.webp/)
+  await expect(page.locator('.hero__poster')).toHaveAttribute('src', /frame_000(-mobile|-landscape)?.webp/)
   await expect(page.locator('.hero__canvas')).toHaveAttribute('data-frame', /\d+/)
+})
+
+test('hero retains source detail and reveals brighter architecture after the title fades', async ({ page, isMobile }) => {
+  if (!isMobile) await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/')
+  const poster = page.locator('.hero__poster')
+  await expect(poster).toHaveJSProperty('complete', true)
+  await expect(poster).toHaveJSProperty('naturalWidth', isMobile ? 608 : 1920)
+  await expect(poster).toHaveJSProperty('naturalHeight', 1080)
+  await expect(page.locator('.hero__canvas')).toHaveAttribute('data-frame', /\d+/)
+  const size = await page.locator('.hero__canvas').evaluate((canvas: HTMLCanvasElement) => ({ width: canvas.width, height: canvas.height }))
+  expect(size.height).toBeGreaterThan(isMobile ? 800 : 720)
+  await page.evaluate(() => { document.documentElement.style.scrollBehavior = 'auto'; window.scrollTo(0, window.innerHeight * 1.5) })
+  await expect(page.locator('.hero__copy')).toHaveCSS('opacity', '0')
+  await expect(page.locator('.hero__shade')).toHaveCSS('opacity', '0.35')
+  await page.locator('#hero').screenshot({ path: `test-results/hero-detail-${test.info().project.name}.png` })
+  await page.evaluate(() => window.scrollTo(0, 0))
+  await expect(page.locator('.hero__shade')).toHaveCSS('opacity', '1')
+})
+
+test('hero quality profile follows portrait, landscape and desktop framing', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', error => errors.push(error.message))
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/')
+  for (const profile of [
+    { width: 390, height: 844, suffix: '-mobile', imageWidth: 608, imageHeight: 1080 },
+    { width: 740, height: 390, suffix: '-landscape', imageWidth: 1280, imageHeight: 720 },
+    { width: 1440, height: 900, suffix: '', imageWidth: 1920, imageHeight: 1080 },
+    { width: 390, height: 844, suffix: '-mobile', imageWidth: 608, imageHeight: 1080 },
+  ]) {
+    await page.setViewportSize({ width: profile.width, height: profile.height })
+    const poster = page.locator('.hero__poster')
+    await expect(poster).toHaveAttribute('src', `/optimized/hero-film-02-architecture-hq/frame_000${profile.suffix}.webp`)
+    await expect(poster).toHaveJSProperty('naturalWidth', profile.imageWidth)
+    await expect(poster).toHaveJSProperty('naturalHeight', profile.imageHeight)
+    await expect(page.locator('.hero__canvas')).toHaveCSS('opacity', '1')
+    await expect(page.locator('.hero__variants, .hero__film-select')).toHaveCount(0)
+  }
+  expect(errors).toEqual([])
+})
+
+test('film still animates when background decoding is unavailable', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.Worker = class { constructor() { throw new Error('Worker unavailable') } } as unknown as typeof Worker
+  })
+  const errors: string[] = []
+  page.on('pageerror', error => errors.push(error.message))
+  await page.goto('/')
+  await expect(page.locator('.hero__canvas')).toHaveAttribute('data-frame', '0')
+  await page.evaluate(() => { document.documentElement.style.scrollBehavior = 'auto'; window.scrollTo(0, window.innerHeight * 1.5) })
+  await expect.poll(() => page.locator('.hero__canvas').getAttribute('data-frame')).not.toBe('0')
+  await page.evaluate(() => window.scrollTo(0, 0))
+  await expect(page.locator('.hero__canvas')).toHaveAttribute('data-frame', '0')
+  expect(errors).toEqual([])
 })
 
 test('reduced motion loads one film frame and skips pinning', async ({ page }) => {
@@ -111,18 +166,19 @@ test('film loading stays bounded and works when scrolling forward and back', asy
 
 test('decoded film stays ready for reverse scrolling without extra frame downloads', async ({ page }) => {
   await page.goto('/')
-  await expect.poll(() => page.evaluate(() => performance.getEntriesByType('resource').filter(entry => /hero-film-02-architecture\/frame_/.test(entry.name)).length), { timeout: 20000 }).toBe(41)
+  await expect.poll(() => page.evaluate(() => performance.getEntriesByType('resource').filter(entry => /hero-film-02-architecture-hq\/frame_/.test(entry.name)).length), { timeout: 20000 }).toBe(41)
   await page.waitForTimeout(300)
   await expect(page.locator('.pin-spacer')).toHaveCount(0)
   await expect(page.locator('.hero')).toHaveCSS('position', 'sticky')
   const buffer = await page.locator('.hero__canvas').evaluate((canvas: HTMLCanvasElement) => ({ width: canvas.width, height: canvas.height, mobile: matchMedia('(max-width: 760px)').matches }))
-  if (!buffer.mobile) { expect(buffer.width).toBeLessThanOrEqual(1280); expect(buffer.height).toBeLessThanOrEqual(720) }
+  if (!buffer.mobile) { expect(buffer.width).toBeLessThanOrEqual(1920); expect(buffer.height).toBeLessThanOrEqual(1080) }
+  else { expect(buffer.width).toBeLessThanOrEqual(608); expect(buffer.height).toBeLessThanOrEqual(1080) }
   await page.evaluate(() => { document.documentElement.style.scrollBehavior = 'auto'; window.scrollTo(0, window.innerHeight * 2) })
   await expect.poll(() => page.locator('.hero__canvas').getAttribute('data-frame')).not.toBe('0')
   const requests = await page.evaluate(() => performance.getEntriesByType('resource').length)
   await page.evaluate(() => window.scrollTo(0, 0))
   await expect(page.locator('.hero__canvas')).toHaveAttribute('data-frame', '0')
-  const frames = await page.evaluate(() => performance.getEntriesByType('resource').filter(entry => /hero-film-02-architecture\/frame_/.test(entry.name)).length)
+  const frames = await page.evaluate(() => performance.getEntriesByType('resource').filter(entry => /hero-film-02-architecture-hq\/frame_/.test(entry.name)).length)
   expect(frames).toBe(41)
   expect(requests).toBeGreaterThan(41)
 })
@@ -130,7 +186,7 @@ test('decoded film stays ready for reverse scrolling without extra frame downloa
 test('data saver uses one static poster and no extended hero scroll', async ({ page }) => {
   await page.addInitScript(() => Object.defineProperty(navigator, 'connection', { configurable: true, value: { saveData: true, effectiveType: '4g' } }))
   const frames = new Set<string>()
-  page.on('request', request => { if (/hero-film-02-architecture\/frame_/.test(request.url())) frames.add(request.url()) })
+  page.on('request', request => { if (/hero-film-02-architecture-hq\/frame_/.test(request.url())) frames.add(request.url()) })
   await page.goto('/')
   await expect(page.locator('.hero-track')).toHaveClass(/hero-track--static/)
   await page.waitForTimeout(1000)

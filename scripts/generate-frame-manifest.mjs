@@ -1,35 +1,43 @@
 import { readdir, stat, mkdir, writeFile } from 'node:fs/promises'
 import { extname, join, relative, sep } from 'node:path'
 import sharp from 'sharp'
+import { HERO_RELEASE } from './hero-settings.mjs'
 
 const publicRoot = join(process.cwd(), 'public')
 const valid = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif'])
 
 const numberOf = (name) => Number(name.match(/\d+/g)?.at(-1) ?? Number.MAX_SAFE_INTEGER)
-const sequenceFolders = ['hero-film-02-architecture']
+const sequenceFolders = [HERO_RELEASE]
 const variants = []
 
 for (const [index, directory] of sequenceFolders.entries()) {
   const dir = join(publicRoot, 'optimized', directory)
   const entries = await readdir(dir, { withFileTypes: true })
   const images = entries
-    .filter((entry) => entry.isFile() && valid.has(extname(entry.name).toLowerCase()) && !entry.name.includes('-mobile') && (numberOf(entry.name) % 2 === 0 || numberOf(entry.name) === 79))
+    .filter((entry) => entry.isFile() && valid.has(extname(entry.name).toLowerCase()) && !/-mobile|-landscape/.test(entry.name) && (numberOf(entry.name) % 2 === 0 || numberOf(entry.name) === 79))
     .sort((a, b) => numberOf(a.name) - numberOf(b.name) || a.name.localeCompare(b.name))
   if (!images.length) throw new Error(`No browser-readable frames found in public/${directory}.`)
   const urls = images.map((entry) => `/${relative(publicRoot, join(dir, entry.name)).split(sep).join('/')}`)
   const sizes = await Promise.all(images.map((entry) => stat(join(dir, entry.name))))
   const dimensions = await sharp(join(dir, images[0].name)).metadata()
+  const mobileDimensions = await sharp(join(dir, images[0].name.replace('.webp', '-mobile.webp'))).metadata()
+  const landscapeDimensions = await sharp(join(dir, images[0].name.replace('.webp', '-landscape.webp'))).metadata()
   variants.push({
     id: '2',
     label: 'Film 02',
     urls,
     mobileUrls: urls.map(url => url.replace('.webp', '-mobile.webp')),
+    landscapeUrls: urls.map(url => url.replace('.webp', '-landscape.webp')),
     meta: {
       count: urls.length,
       directory,
       totalBytes: sizes.reduce((sum, item) => sum + item.size, 0),
       width: dimensions.width,
       height: dimensions.height,
+      mobileWidth: mobileDimensions.width,
+      mobileHeight: mobileDimensions.height,
+      landscapeWidth: landscapeDimensions.width,
+      landscapeHeight: landscapeDimensions.height,
     },
   })
 }

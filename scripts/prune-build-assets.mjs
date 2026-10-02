@@ -1,5 +1,6 @@
 import { readdir, rm } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
+import { HERO_RELEASE } from './hero-settings.mjs'
 const root = resolve('dist')
 // Vite copies all public files. Only optimized imagery belongs in the release.
 for (const entry of await readdir(root, { withFileTypes: true })) {
@@ -16,10 +17,10 @@ for (const entry of await readdir(optimizedRoot, { withFileTypes: true })) {
   if (!entry.isDirectory() || !entry.name.startsWith('hero-')) continue
   const target = resolve(join(optimizedRoot, entry.name))
   if (!target.startsWith(optimizedRoot + '\\') && !target.startsWith(optimizedRoot + '/')) throw new Error('Invalid optimized release path')
-  if (entry.name !== 'hero-film-02-architecture' && entry.name !== 'hero-film-09-craft') await rm(target, { recursive: true })
+  if (entry.name !== HERO_RELEASE && entry.name !== 'hero-film-09-craft') await rm(target, { recursive: true })
   else for (const file of await readdir(target)) {
     const frame = Number(file.match(/\d+/)?.[0])
-    const used = entry.name === 'hero-film-02-architecture' ? frame % 2 === 0 || frame === 79 : frame === 108
+    const used = entry.name === HERO_RELEASE ? frame % 2 === 0 || frame === 79 : frame === 108
     if (!used) await rm(join(target, file))
   }
 }

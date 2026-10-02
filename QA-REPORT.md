@@ -72,3 +72,26 @@ npm test -- --reporter=list,html
 For public production tests, set `PLAYWRIGHT_BASE_URL=https://luxurypalace.vercel.app`, then run `npm test -- --reporter=list,html --output=test-results/live-final`. The preview server is skipped. Unset that variable to return to local testing.
 
 For the performance comparison, start the production preview on port 4175, set `PROFILE_CPU_THROTTLE=4`, and run `node scripts/profile-performance.mjs http://127.0.0.1:4175 comparison`. Set `PROFILE_WARMUP_MS=0` for immediate scrolling; omit it for the default 10-second preparation period.
+
+## Film 02 quality upgrade — 2026-10-02
+
+The earlier hero profiles reduced a 1920×1080 original to 1280×720 at WebP quality 68 on desktop and 768×432 at quality 64 on phones. The quality release retains the full desktop source at quality 82, uses a centered 608×1080 portrait crop for phones, and supplies 1280×720 for narrow landscape viewports. These are responsive encodings of the same finalized Film 02; no film selectors or alternate sequences were added. Profile selection follows orientation and viewport changes. The new `hero-film-02-architecture-hq` URL namespace avoids reuse of previously cached low-resolution frames.
+
+All profiles retain 41 frames. Complete compressed sequences weigh 4.710 MB desktop, 1.632 MB portrait, and 2.907 MB narrow landscape. The first posters weigh 88.6, 29.1 and 56.1 KB respectively. Only the active profile loads on arrival. The canvas buffer is bounded by source dimensions and a maximum 1.5 device pixel ratio. Shading is lighter and fades further after the title disappears.
+
+An initial full-resolution implementation regressed desktop scrolling: creating large bitmaps from HTML images and deferred bitmap rasterization blocked the page. The final implementation prepares subsequent frame pixels in a dedicated worker with OffscreenCanvas, transfers ready bitmaps to the page, and keeps two requests/decode jobs in flight. A tested HTML-image fallback remains for browsers without background decoding. Bilinear canvas scaling avoids expensive filters on every draw. Previously decoded frames remain available for reverse scrolling.
+
+Final local production-preview measurements used Chromium, cold cache, approximately 4 Mbps, 80 ms latency and 4× CPU slowdown. Each scroll lasted 10 seconds over 10,000 pixels; prepared measurements began after 10 seconds of loading.
+
+| Scenario | 95th-percentile interval | Longest interval | Scroll long tasks | Distinct film frames drawn |
+| --- | --- | --- | --- | --- |
+| Desktop, prepared | 16.8 ms | 33.4 ms | 0 | 40 |
+| Phone, prepared | 16.7 ms | 16.8 ms | 0 | 40 |
+| Desktop, immediate | 16.7 ms | 33.3 ms | 0 | 13 |
+| Phone, immediate | 16.7 ms | 16.8 ms | 0 | 22 |
+
+First animated draws appeared approximately 1.1–1.4 seconds after navigation in the prepared runs and 1.3 seconds in the immediate runs. All four profiles recorded no runtime errors. Page scrolling remained responsive in the final stress tests, but immediate scrolling still skips animation frames while the larger images download. The desktop sequence is larger than the previous release. Retaining full-resolution decoded frames also increases memory use; emulation does not establish performance on every physical device. Genuine 4K detail requires a higher-resolution master rather than enlarging the existing Full HD images.
+
+Raw final measurements are `performance-results/quality-worker-warm-performance.json` and `performance-results/quality-worker-immediate-performance.json`. New browser checks cover actual poster dimensions, sharper canvas buffers, the brighter architectural reveal, portrait/landscape/desktop transitions, continued Film 02-only behavior and background-decoder failure.
+
+The local browser run completed 68 of 69 checks successfully and exposed missing OffscreenCanvas support inside this emulated WebKit worker. A startup capability handshake now selects HTML-image loading before requesting extra compressed blobs. All nine affected profile-switching, worker-failure and reverse-scroll checks then passed across Chromium, Firefox and mobile WebKit. The earlier detail test also corrected its viewport assumption: a 720-pixel-tall canvas should not be expected to exceed the viewport at 1× pixel ratio.

@@ -24,23 +24,45 @@ for (const mode of ['desktop', 'mobile']) {
   const errors = []
   page.on('pageerror', error => errors.push(error.message))
   await page.addInitScript(() => {
-    window.__profile = { tasks: [], lcp: 0, draws: [] }
+    window.__profile = { tasks: [], lcp: 0, draws: [], bitmapSyncMs: [], drawSyncMs: [] }
     const bitmapSources = new WeakMap()
+    let anonymousBitmap = 0
+    const originalFetch = window.fetch.bind(window)
+    window.fetch = async (...args) => {
+      const response = await originalFetch(...args)
+      const originalBlob = response.blob.bind(response)
+      response.blob = async () => {
+        const blob = await originalBlob()
+        bitmapSources.set(blob, typeof args[0] === 'string' ? args[0] : args[0]?.url)
+        return blob
+      }
+      return response
+    }
     if (typeof window.createImageBitmap === 'function') {
       const originalCreateBitmap = window.createImageBitmap.bind(window)
       window.createImageBitmap = async (...args) => {
-        const bitmap = await originalCreateBitmap(...args)
+        const start = performance.now()
+        const pending = originalCreateBitmap(...args)
+        window.__profile.bitmapSyncMs.push(performance.now() - start)
+        const bitmap = await pending
         bitmapSources.set(bitmap, args[0]?.src || bitmapSources.get(args[0]))
         return bitmap
       }
     }
     const originalDraw = CanvasRenderingContext2D.prototype.drawImage
     CanvasRenderingContext2D.prototype.drawImage = function (...args) {
-      const src = args[0]?.src || bitmapSources.get(args[0])
+      let src = args[0]?.src || bitmapSources.get(args[0])
+      if (!src && this.canvas.classList?.contains('hero__canvas')) {
+        src = `hero-film-worker-bitmap-${++anonymousBitmap}`
+        bitmapSources.set(args[0], src)
+      }
       if (src?.includes('hero-film')) {
         window.__profile.draws.push({ time: performance.now(), src })
       }
-      return originalDraw.apply(this, args)
+      const start = performance.now()
+      const result = originalDraw.apply(this, args)
+      if (src?.includes('hero-film')) window.__profile.drawSyncMs.push(performance.now() - start)
+      return result
     }
     new PerformanceObserver(list => {
       window.__profile.tasks.push(...list.getEntries().map(entry => ({ start: entry.startTime, duration: entry.duration })))
@@ -100,6 +122,8 @@ for (const mode of ['desktop', 'mobile']) {
       distinctHeroFramesDrawn: new Set(draws.map(draw => draw.src)).size,
       totalCompletedImageRequests: images.length,
       totalCompletedImageTransferKB: Math.round(images.reduce((sum, item) => sum + item.transferSize, 0) / 1000),
+      maxBitmapSyncMs: Math.round(Math.max(0, ...window.__profile.bitmapSyncMs)),
+      maxHeroDrawSyncMs: Math.round(Math.max(0, ...window.__profile.drawSyncMs)),
     }
   })
   const result = { mode, network: `4 Mbps / 80 ms latency, cold cache, CPU throttle ${cpuRate}x`, warmupMs, initial, scroll, errors }

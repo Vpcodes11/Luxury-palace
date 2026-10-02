@@ -1,10 +1,11 @@
 import { readdir, readFile, mkdir, stat } from 'node:fs/promises'
 import { join, extname, dirname } from 'node:path'
 import sharp from 'sharp'
+import { HERO_SOURCE, HERO_RELEASE, HERO_PROFILES } from './hero-settings.mjs'
 
 const root = process.cwd()
 const publicRoot = join(root, 'public')
-const folders = ['hero-film-02-architecture']
+const folders = [HERO_SOURCE]
 const jobs = []
 for (const file of await readdir(join(publicRoot, 'campaign'))) {
   if (/\.(jpg|jpeg|png)$/i.test(file)) jobs.push(`campaign/${file}`)
@@ -40,15 +41,16 @@ async function worker() {
     const input = join(publicRoot, relative)
     const inputStat = await stat(input)
     originalBytes += inputStat.size
-    const base = join(publicRoot, 'optimized', relative.slice(0, -extname(relative).length))
+    const sequence = relative.startsWith(HERO_SOURCE + '/')
+    const targetRelative = sequence ? relative.replace(HERO_SOURCE, HERO_RELEASE) : relative
+    const base = join(publicRoot, 'optimized', targetRelative.slice(0, -extname(relative).length))
     await mkdir(dirname(base), { recursive: true })
-    const sequence = relative.startsWith('hero-film-02-architecture/')
-    const variants = sequence ? [['', 1280, 68], ['-mobile', 768, 64]] : [['', 1600, 76], ['-mobile', 800, 70]]
-    for (const [suffix, width, quality] of variants) {
+    const variants = sequence ? HERO_PROFILES : [{ suffix: '', width: 1600, quality: 76 }, { suffix: '-mobile', width: 800, quality: 70 }]
+    for (const { suffix, width, height, quality } of variants) {
       const output = `${base}${suffix}.webp`
       let fresh = false
-      try { fresh = (await stat(output)).mtimeMs >= Math.max(inputStat.mtimeMs, (await stat(new URL(import.meta.url))).mtimeMs) } catch {}
-      if (!fresh) await sharp(input).rotate().resize({ width, withoutEnlargement: true }).webp({ quality, effort: 4 }).toFile(output)
+      try { fresh = (await stat(output)).mtimeMs >= Math.max(inputStat.mtimeMs, (await stat(new URL(import.meta.url))).mtimeMs, (await stat(new URL('./hero-settings.mjs', import.meta.url))).mtimeMs) } catch {}
+      if (!fresh) await sharp(input).rotate().resize({ width, height, fit: 'cover', position: 'centre', withoutEnlargement: true }).webp({ quality, effort: sequence ? 6 : 4 }).toFile(output)
       const size = (await stat(output)).size
       if (suffix) mobileBytes += size; else desktopBytes += size
     }
