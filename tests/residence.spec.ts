@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test'
 import sharp from 'sharp'
 
-test('homepage serves baked dusk lighting with warm interiors and cool exterior stone', async ({ page, request }) => {
-  const response = await request.get('/optimized/hero-film-02-architecture-dusk-v1/frame_000.webp')
+test('homepage transitions from daylight to baked blue-hour lighting with warm interiors', async ({ page, request }) => {
+  const response = await request.get('/optimized/hero-film-02-architecture-day-night-v1/frame_079.webp')
   expect(response.ok()).toBe(true)
   const image = await response.body()
   async function average(left: number, top: number, width: number, height: number) {
@@ -11,16 +11,37 @@ test('homepage serves baked dusk lighting with warm interiors and cool exterior 
     for (let i = 0; i < pixels.length; i++) sums[i % 3] += pixels[i]
     return sums.map(sum => sum / (width * height))
   }
-  const exterior = await average(540, 450, 40, 40)
-  const interior = await average(936, 470, 36, 36)
-  const sky = await average(280, 2, 12, 10)
+  const interior = await average(460, 625, 30, 30)
+  const sky = await average(1750, 70, 60, 40)
   expect(sky[2]).toBeGreaterThan(sky[0] * 1.5)
-  expect(exterior[2]).toBeGreaterThan(exterior[0] * .9)
   expect(interior[0]).toBeGreaterThan(interior[2] * 1.5)
-  expect(interior[0] + interior[1]).toBeGreaterThan((exterior[0] + exterior[1]) * 1.3)
+  const daylight = await request.get('/optimized/hero-film-02-architecture-day-night-v1/frame_000.webp')
+  const pixels = await sharp(await daylight.body()).extract({ left: 540, top: 450, width: 40, height: 40 }).removeAlpha().raw().toBuffer()
+  const sums = [0, 0, 0]
+  for (let i = 0; i < pixels.length; i++) sums[i % 3] += pixels[i]
+  expect(sums[0] / 1600).toBeGreaterThan(110)
+  expect(sums[0]).toBeGreaterThan(sums[2] * 1.3)
   await page.goto('/')
   await expect(page.locator('.hero__poster')).toHaveCSS('filter', 'none')
   await expect(page.locator('.hero__canvas')).toHaveCSS('filter', 'none')
+})
+
+test('day-night transition reaches evening and reverses back to daylight without reloading', async ({ page }) => {
+  await page.goto('/')
+  await expect.poll(() => page.evaluate(() => new Set(performance.getEntriesByType('resource').filter(entry => /hero-film-02-architecture-day-night-v1\/frame_/.test(entry.name)).map(entry => entry.name)).size), { timeout: 20000 }).toBe(41)
+  const canvas = page.locator('.hero__canvas')
+  await expect(canvas).toHaveAttribute('data-frame', '0')
+  await page.locator('#hero').screenshot({ path: `test-results/transition-day-${test.info().project.name}.png` })
+  for (const stage of [{ index: 20, name: 'evening' }, { index: 40, name: 'night' }, { index: 20, name: 'reverse' }, { index: 0, name: 'day-return' }]) {
+    await page.evaluate(index => {
+      document.documentElement.style.scrollBehavior = 'auto'
+      const track = document.querySelector('#hero-track')!
+      const hero = document.querySelector('#hero')!
+      window.scrollTo(0, (track.getBoundingClientRect().height - hero.getBoundingClientRect().height) * .88 * index / 40)
+    }, stage.index)
+    await expect(canvas).toHaveAttribute('data-frame', String(stage.index))
+    if (stage.name === 'evening' || stage.name === 'night') await page.locator('#hero').screenshot({ path: `test-results/transition-${stage.name}-${test.info().project.name}.png` })
+  }
 })
 
 test('homepage uses only finalized Film 02 without selectors or missing assets', async ({ page }) => {
@@ -35,7 +56,7 @@ test('homepage uses only finalized Film 02 without selectors or missing assets',
     await expect(page.locator('.hero__canvas')).toHaveAttribute('data-frame', /\d+/)
   }
   expect(filmRequests.length).toBeGreaterThan(0)
-  expect(filmRequests.every(url => url.includes('/hero-film-02-architecture-dusk-v1/'))).toBe(true)
+  expect(filmRequests.every(url => url.includes('/hero-film-02-architecture-day-night-v1/'))).toBe(true)
   expect(missing).toEqual([]); expect(errors).toEqual([])
 })
 
@@ -116,7 +137,7 @@ test('hero quality profile follows portrait, landscape and desktop framing', asy
   ]) {
     await page.setViewportSize({ width: profile.width, height: profile.height })
     const poster = page.locator('.hero__poster')
-    await expect(poster).toHaveAttribute('src', `/optimized/hero-film-02-architecture-dusk-v1/frame_000${profile.suffix}.webp`)
+    await expect(poster).toHaveAttribute('src', `/optimized/hero-film-02-architecture-day-night-v1/frame_000${profile.suffix}.webp`)
     await expect(poster).toHaveJSProperty('naturalWidth', profile.imageWidth)
     await expect(poster).toHaveJSProperty('naturalHeight', profile.imageHeight)
     await expect(page.locator('.hero__canvas')).toHaveCSS('opacity', '1')
@@ -189,9 +210,9 @@ test('film loading stays bounded and works when scrolling forward and back', asy
 
 test('decoded film stays ready for reverse scrolling without extra frame downloads', async ({ page }) => {
   await page.goto('/')
-  await expect.poll(() => page.evaluate(() => new Set(performance.getEntriesByType('resource').filter(entry => /hero-film-02-architecture-dusk-v1\/frame_/.test(entry.name)).map(entry => entry.name)).size), { timeout: 20000 }).toBe(41)
+  await expect.poll(() => page.evaluate(() => new Set(performance.getEntriesByType('resource').filter(entry => /hero-film-02-architecture-day-night-v1\/frame_/.test(entry.name)).map(entry => entry.name)).size), { timeout: 20000 }).toBe(41)
   await page.waitForTimeout(300)
-  const preparedRequests = await page.evaluate(() => performance.getEntriesByType('resource').filter(entry => /hero-film-02-architecture-dusk-v1\/frame_/.test(entry.name)).length)
+  const preparedRequests = await page.evaluate(() => performance.getEntriesByType('resource').filter(entry => /hero-film-02-architecture-day-night-v1\/frame_/.test(entry.name)).length)
   await expect(page.locator('.pin-spacer')).toHaveCount(0)
   await expect(page.locator('.hero')).toHaveCSS('position', 'sticky')
   const buffer = await page.locator('.hero__canvas').evaluate((canvas: HTMLCanvasElement) => ({ width: canvas.width, height: canvas.height, mobile: matchMedia('(max-width: 760px)').matches }))
@@ -202,7 +223,7 @@ test('decoded film stays ready for reverse scrolling without extra frame downloa
   const requests = await page.evaluate(() => performance.getEntriesByType('resource').length)
   await page.evaluate(() => window.scrollTo(0, 0))
   await expect(page.locator('.hero__canvas')).toHaveAttribute('data-frame', '0')
-  const frames = await page.evaluate(() => performance.getEntriesByType('resource').filter(entry => /hero-film-02-architecture-dusk-v1\/frame_/.test(entry.name)).length)
+  const frames = await page.evaluate(() => performance.getEntriesByType('resource').filter(entry => /hero-film-02-architecture-day-night-v1\/frame_/.test(entry.name)).length)
   // The poster and worker's compressed-blob read may share one cached URL.
   // Reversing the film must not request it or any other frame again.
   expect(frames).toBe(preparedRequests)
@@ -212,7 +233,7 @@ test('decoded film stays ready for reverse scrolling without extra frame downloa
 test('data saver uses one static poster and no extended hero scroll', async ({ page }) => {
   await page.addInitScript(() => Object.defineProperty(navigator, 'connection', { configurable: true, value: { saveData: true, effectiveType: '4g' } }))
   const frames = new Set<string>()
-  page.on('request', request => { if (/hero-film-02-architecture-dusk-v1\/frame_/.test(request.url())) frames.add(request.url()) })
+  page.on('request', request => { if (/hero-film-02-architecture-day-night-v1\/frame_/.test(request.url())) frames.add(request.url()) })
   await page.goto('/')
   await expect(page.locator('.hero-track')).toHaveClass(/hero-track--static/)
   await page.waitForTimeout(1000)

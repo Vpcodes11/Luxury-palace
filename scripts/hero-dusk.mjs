@@ -1,6 +1,7 @@
 import { stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import sharp from 'sharp'
+import { nightAmount } from './hero-settings.mjs'
 
 // AI supplies the lighting; the original film supplies every architectural edge
 // and texture. Work at low frequency so independently edited reference details
@@ -106,6 +107,8 @@ function occlusion(frame, x) {
 }
 
 export async function prepareDuskFrame(input, frame) {
+  const night = nightAmount(frame)
+  if (night === 0) return sharp(input)
   const all = await references()
   const right = all.find(reference => reference.frame >= frame) ?? all.at(-1)
   const left = all.filter(reference => reference.frame <= frame).at(-1) ?? all[0]
@@ -129,7 +132,10 @@ export async function prepareDuskFrame(input, frame) {
   const columnMasks = Array.from({ length: info.width }, (_, x) => occlusion(frame, x * 1920 / info.width))
   for (let i = 0; i < output.length; i++) {
     const mask = columnMasks[Math.floor(i / channels) % info.width]
-    const gain = Math.exp(illumination[i] / 40 - 3) * (1 - mask) + cool[i % channels] * mask
+    const duskGain = Math.exp(illumination[i] / 40 - 3) * (1 - mask) + cool[i % channels] * mask
+    // Interpolate exposure in log space: the exterior darkens continuously as
+    // existing interior light gains warmth. At 1 this is the approved dusk look.
+    const gain = Math.exp(Math.log(duskGain) * night)
     output[i] = Math.max(0, Math.min(255, Math.round((original[i] + 18) * gain - 18)))
   }
   return sharp(output, { raw: { width: info.width, height: info.height, channels: info.channels } })

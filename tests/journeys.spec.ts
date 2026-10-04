@@ -106,7 +106,10 @@ test('valid enquiry clearly confirms a local demo and resets without transmissio
   expect(transmissions).toEqual([])
 })
 
-test('full page images load without runtime errors or horizontal overflow', async ({ page }) => {
+test('full page images load without runtime errors or horizontal overflow', async ({ page, isMobile }) => {
+  // This walks every section/image and captures the entire tall page. Mobile
+  // WebKit automation needs more time for the complete audit, not each check.
+  if (isMobile) test.setTimeout(90000)
   const errors: string[] = [], missing: string[] = []
   page.on('pageerror', error => errors.push(error.message))
   page.on('response', response => { if (response.status() >= 400) missing.push(response.url()) })
