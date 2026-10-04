@@ -6,9 +6,11 @@ const url = process.argv[2] || 'http://127.0.0.1:4175'
 const label = process.argv[3] || 'profile'
 const cpuRate = Number(process.env.PROFILE_CPU_THROTTLE || 1)
 const warmupMs = Number(process.env.PROFILE_WARMUP_MS ?? 10000)
+const modes = process.env.PROFILE_MODE ? [process.env.PROFILE_MODE] : ['desktop', 'mobile']
+if (modes.some(mode => !['desktop', 'mobile'].includes(mode))) throw new Error('PROFILE_MODE must be desktop or mobile')
 const results = []
 const browser = await chromium.launch({ args: ['--enable-unsafe-swiftshader'] })
-for (const mode of ['desktop', 'mobile']) {
+for (const mode of modes) {
   const context = await browser.newContext(mode === 'mobile'
     ? { ...devices['Pixel 7'] }
     : { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 })
@@ -24,15 +26,16 @@ for (const mode of ['desktop', 'mobile']) {
   const errors = []
   page.on('pageerror', error => errors.push(error.message))
   await page.addInitScript(() => {
-    window.__profile = { tasks: [], lcp: 0, draws: [], bitmapSyncMs: [], drawSyncMs: [] }
+    window.__profile = { tasks: [], lcp: 0, draws: [], bitmapSyncMs: [], drawSyncMs: [], maxDecodedHeroFrames: 0 }
     new MutationObserver(records => {
       for (const record of records) {
         const canvas = record.target
-        if (canvas.dataset?.renderer === 'worker' && canvas.dataset.frame !== undefined) {
+        if (canvas.classList?.contains('hero__canvas')) window.__profile.maxDecodedHeroFrames = Math.max(window.__profile.maxDecodedHeroFrames, Number(canvas.dataset.cachedFrames || 0))
+        if (record.attributeName === 'data-frame' && canvas.dataset?.renderer === 'worker' && canvas.dataset.frame !== undefined) {
           window.__profile.draws.push({ time: performance.now(), src: `hero-film-worker-frame-${canvas.dataset.frame}` })
         }
       }
-    }).observe(document, { subtree: true, attributes: true, attributeFilter: ['data-frame'] })
+    }).observe(document, { subtree: true, attributes: true, attributeFilter: ['data-frame', 'data-cached-frames'] })
     const bitmapSources = new WeakMap()
     let anonymousBitmap = 0
     const originalFetch = window.fetch.bind(window)
@@ -97,6 +100,7 @@ for (const mode of ['desktop', 'mobile']) {
       completedJsTransferKB: Math.round(entries.filter(entry => /\.js(\?|$)/.test(entry.name)).reduce((sum, item) => sum + item.transferSize, 0) / 1000),
       initialLongTasks: window.__profile.tasks.length,
       initialLongTaskMs: Math.round(window.__profile.tasks.reduce((sum, task) => sum + task.duration, 0)),
+      maxDecodedHeroFrames: window.__profile.maxDecodedHeroFrames,
     }
   })
   const scroll = await page.evaluate(async () => {
@@ -135,6 +139,7 @@ for (const mode of ['desktop', 'mobile']) {
       totalCompletedImageTransferKB: Math.round(images.reduce((sum, item) => sum + item.transferSize, 0) / 1000),
       maxBitmapSyncMs: Math.round(Math.max(0, ...window.__profile.bitmapSyncMs)),
       maxHeroDrawSyncMs: Math.round(Math.max(0, ...window.__profile.drawSyncMs)),
+      maxDecodedHeroFrames: window.__profile.maxDecodedHeroFrames,
     }
   })
   const result = { mode, network: `4 Mbps / 80 ms latency, cold cache, CPU throttle ${cpuRate}x`, warmupMs, initial, scroll, errors }

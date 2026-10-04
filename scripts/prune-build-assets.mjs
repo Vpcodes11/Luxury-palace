@@ -20,7 +20,7 @@ for (const entry of await readdir(optimizedRoot, { withFileTypes: true })) {
   if (entry.name !== HERO_RELEASE && entry.name !== 'hero-film-09-craft') await rm(target, { recursive: true })
   else for (const file of await readdir(target)) {
     const frame = Number(file.match(/\d+/)?.[0])
-    const used = entry.name === HERO_RELEASE ? frame % 2 === 0 || frame === 79 : frame === 108
+    const used = entry.name === HERO_RELEASE ? frame >= 0 && frame <= 79 : frame === 108
     if (!used) await rm(join(target, file))
   }
 }

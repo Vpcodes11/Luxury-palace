@@ -38,6 +38,10 @@ export function HeroSequence() {
     const sourceWidth = profile === 'portrait' ? HERO_FILM.meta.mobileWidth : profile === 'landscape' ? HERO_FILM.meta.landscapeWidth : HERO_FILM.meta.width
     const sourceHeight = profile === 'portrait' ? HERO_FILM.meta.mobileHeight : profile === 'landscape' ? HERO_FILM.meta.landscapeHeight : HERO_FILM.meta.height
     const images: Array<HTMLImageElement | ImageBitmap | undefined> = new Array(urls.length)
+    const sources: Array<Blob | undefined> = new Array(urls.length)
+    const preparing = new Set<number>()
+    const imageJobs = new Map<HTMLImageElement, string>()
+    const cacheRadius = 6
     const pending = new Map<number, HTMLImageElement | AbortController>()
     const failed = new Set<number>()
     const loaded = new Set<number>()
@@ -54,7 +58,7 @@ export function HeroSequence() {
     try {
       if (typeof canvas.transferControlToOffscreen !== 'function') throw new Error('Worker canvas unavailable')
       decoder = new Worker(new URL('../lib/heroDecoder.worker.ts', import.meta.url), { type: 'module' })
-      decoder.onmessage = ({ data }: MessageEvent<{ index: number; loaded?: boolean; failed?: boolean; ready?: boolean; painted?: number }>) => {
+      decoder.onmessage = ({ data }: MessageEvent<{ index?: number; loaded?: boolean; failed?: boolean; ready?: boolean; painted?: number; cached?: number }>) => {
         if (destroyed) return
         if (typeof data.ready === 'boolean') {
           if (data.ready) {
@@ -68,12 +72,15 @@ export function HeroSequence() {
           if (!data.ready) { blobDecodingFailed = true; decoder?.terminate(); decoder = undefined; enableFallback() }
           return
         }
+        if (data.cached !== undefined) canvas.dataset.cachedFrames = String(data.cached)
         if (data.painted !== undefined) {
           canvas.style.opacity = '1'; canvas.dataset.frame = String(data.painted)
           return
         }
-        const job = decoding.get(data.index)
-        if (job) { decoding.delete(data.index); if (data.loaded) job.resolve(); else job.reject() }
+        if (data.index !== undefined) {
+          const job = decoding.get(data.index)
+          if (job) { decoding.delete(data.index); if (data.loaded) job.resolve(); else job.reject() }
+        }
       }
       decoder.onerror = event => {
         event.preventDefault()
@@ -90,13 +97,53 @@ export function HeroSequence() {
       decoder.postMessage({ index, blob })
     })
     let queue: number[] = [], currentIndex = 0, paintedIndex = -1
-    let destroyed = false, active = true, warming = false, renderFrame = 0, warmTimer = 0
+    let destroyed = false, suspended = false, active = true, warming = false, renderFrame = 0, warmTimer = 0
     let pixelWidth = 1, pixelHeight = 1
     const playhead = { progress: 0 }
 
+    const release = (image: HTMLImageElement | ImageBitmap) => { if ('close' in image) image.close(); else image.src = '' }
+    const trim = () => {
+      images.forEach((image, index) => {
+        if (image && index !== paintedIndex && (!active || Math.abs(index - currentIndex) > cacheRadius)) { release(image); images[index] = undefined }
+      })
+      canvas.dataset.cachedFrames = String(images.filter(Boolean).length)
+    }
+    const readImage = (blob: Blob): Promise<HTMLImageElement | ImageBitmap> => new Promise((resolve, reject) => {
+        const image = new Image(), url = URL.createObjectURL(blob)
+        imageJobs.set(image, url); image.decoding = 'async'
+        const finish = () => { URL.revokeObjectURL(url); imageJobs.delete(image) }
+        image.onload = async () => {
+          try { await image.decode() } catch { /* Already loaded. */ }
+          // Keep a small window of decoded HTML images on the fallback path.
+          // Avoid creating a second bitmap surface for each image on Safari.
+          finish(); resolve(image)
+        }
+        image.onerror = () => { finish(); reject(new Error('Frame decode failed')) }
+        image.src = url
+      })
+    const prepare = () => {
+      if (workerDrawing || destroyed || suspended) return
+      trim()
+      if (!active) return
+      const priority = [currentIndex]
+      for (let offset = 1; offset <= cacheRadius; offset++) priority.push(currentIndex + offset, currentIndex - offset)
+      for (const index of priority) {
+        if (preparing.size >= 2) break
+        if (!sources[index] || images[index] || preparing.has(index) || failed.has(index)) continue
+        preparing.add(index)
+        void readImage(sources[index]!).then(image => {
+          if (!destroyed && active && Math.abs(index - currentIndex) <= cacheRadius) images[index] = image
+          else release(image)
+        }).catch(() => { failed.add(index) }).finally(() => {
+          preparing.delete(index)
+          if (!destroyed) { scheduleDraw(); prepare() }
+        })
+      }
+    }
+
     const draw = () => {
       renderFrame = 0
-      if (destroyed || !active) return
+      if (destroyed || suspended || !active) return
       if (workerDrawing) { decoder?.postMessage({ frame: currentIndex }); return }
       if (!context) return
       let index = currentIndex
@@ -116,12 +163,17 @@ export function HeroSequence() {
       canvas.style.opacity = '1'
       paintedIndex = index
       canvas.dataset.frame = String(index)
+      trim()
     }
-    const scheduleDraw = () => { if (!renderFrame && !destroyed) renderFrame = requestAnimationFrame(draw) }
+    const scheduleDraw = () => {
+      if (destroyed || suspended || !active) return
+      if (workerDrawing) { decoder?.postMessage({ frame: currentIndex }); return }
+      if (!renderFrame) renderFrame = requestAnimationFrame(draw)
+    }
 
     const pump = () => {
-      if (destroyed || !active) return
-      // Two requests at a time, including decode, with low-priority warmup.
+      if (destroyed || suspended || !active) return
+      // Two compressed-frame requests at a time; decoding has its own bounded queue.
       while (pending.size < 2 && queue.length) {
         const index = queue.shift()!
         if (loaded.has(index) || pending.has(index) || failed.has(index)) continue
@@ -132,19 +184,22 @@ export function HeroSequence() {
           void (async () => {
             try {
               if (!await decoderReady) throw new Error('Background decoding unavailable')
-              const response = await fetch(urls[index], { signal: controller.signal, priority: index === 0 ? 'high' : 'low' } as RequestInit & { priority: string })
+              const response = await fetch(urls[index], { mode: 'same-origin', signal: controller.signal, priority: index === 0 ? 'high' : 'low' } as RequestInit & { priority: string })
               if (!response.ok) throw new Error('Frame unavailable')
-              await decode(await response.blob(), index)
+              const blob = await response.blob()
+              sources[index] = blob
+              await decode(blob, index)
               if (destroyed) return
               loaded.add(index)
               pending.delete(index)
               scheduleDraw()
-              if (index === 0 && !warmTimer) warmTimer = window.setTimeout(() => { warming = true; enqueue(currentIndex) }, 700)
+              if (index === 0 && !warmTimer) warmTimer = window.setTimeout(() => { warming = true; enqueue(currentIndex) }, 200)
               pump()
             } catch {
               if (destroyed) return
               // Older browsers retain the HTML-image path if worker decode fails.
               pending.delete(index)
+              if (controller.signal.aborted) return
               if (workerDrawing) failed.add(index)
               else { blobDecodingFailed = true; queue.unshift(index) }
               if (index === 0) { warming = true; enqueue(1) }
@@ -153,39 +208,36 @@ export function HeroSequence() {
           })()
           continue
         }
-        const image = new Image()
-        pending.set(index, image)
-        image.decoding = 'async'
-        image.fetchPriority = index === 0 ? 'high' : 'low'
-        image.onload = async () => {
-          try { await image.decode() } catch { /* Some browsers decode on load. */ }
-          // Image.decode() alone does not retain the browser's decoded pixels.
-          // Bitmaps prevent lazy re-decoding during the next scroll commit.
-          let decoded: HTMLImageElement | ImageBitmap = image
-          if (typeof createImageBitmap === 'function') {
-            try { decoded = await createImageBitmap(image) } catch { /* Keep HTML image fallback. */ }
+        const controller = new AbortController()
+        pending.set(index, controller)
+        void (async () => {
+          try {
+            const response = await fetch(urls[index], { mode: 'same-origin', signal: controller.signal, priority: index === 0 ? 'high' : 'low' } as RequestInit & { priority: string })
+            if (!response.ok) throw new Error('Frame unavailable')
+            const blob = await response.blob()
+            if (destroyed) return
+            sources[index] = blob; loaded.add(index); pending.delete(index)
+            prepare(); scheduleDraw()
+            if (index === 0 && !warmTimer) warmTimer = window.setTimeout(() => { warming = true; enqueue(currentIndex) }, 200)
+          } catch {
+            if (destroyed) return
+            pending.delete(index)
+            if (controller.signal.aborted) return
+            failed.add(index)
+            if (index === 0) { warming = true; enqueue(1) }
           }
-          if (destroyed) { if ('close' in decoded) decoded.close(); return }
-          images[index] = decoded
-          loaded.add(index)
-          pending.delete(index)
-          scheduleDraw()
-          if (index === 0 && !warmTimer) warmTimer = window.setTimeout(() => { warming = true; enqueue(currentIndex) }, 700)
           pump()
-        }
-        image.onerror = () => {
-          if (destroyed) return
-          pending.delete(index); failed.add(index)
-          if (index === 0) { warming = true; enqueue(1) }
-          pump()
-        }
-        image.src = urls[index]
+        })()
       }
     }
     const enqueue = (center: number) => {
       const priority: number[] = [center]
-      for (let offset = 1; offset <= 4; offset++) priority.push(center + offset, center - offset)
-      if (warming) for (let index = 0; index < urls.length; index++) priority.push(index)
+      for (let offset = 1; offset <= 8; offset++) priority.push(center + offset, center - offset)
+      // Cover the whole film first, then fill the intermediate camera positions.
+      if (warming) {
+        for (let index = 0; index < urls.length; index += 2) priority.push(index)
+        for (let index = 1; index < urls.length; index += 2) priority.push(index)
+      }
       queue = [...new Set(priority)].filter(index => index >= 0 && index < urls.length && !loaded.has(index) && !pending.has(index) && !failed.has(index))
       pump()
     }
@@ -212,19 +264,39 @@ export function HeroSequence() {
     const sizeObserver = new ResizeObserver(resize)
     sizeObserver.observe(section)
     const visibility = new IntersectionObserver(([entry]) => {
+      if (suspended) return
       active = entry.isIntersecting
       if (workerDrawing) decoder?.postMessage({ active })
-      if (active) { enqueue(currentIndex); scheduleDraw() }
+      if (active) { enqueue(currentIndex); prepare(); scheduleDraw() }
+      else if (!workerDrawing) trim()
     })
     visibility.observe(section)
+    // A full document navigation does not unmount React. Cancel requests before
+    // Safari tears down the document, and resume cleanly from the back/forward cache.
+    const pause = () => {
+      suspended = true; active = false
+      if (workerDrawing) decoder?.postMessage({ active: false })
+      pending.forEach(request => { if (request instanceof AbortController) request.abort() })
+      if (!workerDrawing) trim()
+    }
+    const resume = () => {
+      suspended = false
+      const rect = section.getBoundingClientRect()
+      active = rect.bottom > 0 && rect.top < innerHeight
+      if (workerDrawing) decoder?.postMessage({ active })
+      if (active) { enqueue(currentIndex); prepare(); scheduleDraw() }
+    }
+    window.addEventListener('pagehide', pause)
+    window.addEventListener('beforeunload', pause)
+    window.addEventListener('pageshow', resume)
     enqueue(0)
     const gsapContext = gsap.context(() => {
       gsap.to(playhead, {
         progress: 1, ease: 'none',
-        scrollTrigger: { trigger: track, start: 'top top', end: 'bottom bottom', scrub: .18, invalidateOnRefresh: true },
+        scrollTrigger: { trigger: track, start: 'top top', end: 'bottom bottom', scrub: .45, invalidateOnRefresh: true },
         onUpdate: () => {
           const next = Math.round(Math.min(playhead.progress / .88, 1) * (urls.length - 1))
-          if (next !== currentIndex) { currentIndex = next; enqueue(next); scheduleDraw() }
+          if (next !== currentIndex) { currentIndex = next; enqueue(next); prepare(); scheduleDraw() }
           const fade = gsap.utils.clamp(0, 1, 1 - (playhead.progress - .1) / .17)
           copy.style.opacity = String(fade)
           copy.style.transform = `translate3d(0, calc(-42% + ${24 * (1 - fade)}px), 0)`
@@ -235,13 +307,16 @@ export function HeroSequence() {
     return () => {
       destroyed = true; clearTimeout(warmTimer); cancelAnimationFrame(renderFrame)
       sizeObserver.disconnect(); visibility.disconnect(); gsapContext.revert()
+      window.removeEventListener('pagehide', pause); window.removeEventListener('pageshow', resume)
+      window.removeEventListener('beforeunload', pause)
       pending.forEach(request => {
         if (request instanceof AbortController) request.abort()
         else { request.onload = null; request.onerror = null; request.src = '' }
       })
-      pending.clear(); images.forEach(image => { if (image && 'close' in image) image.close() }); images.length = 0
+      pending.clear(); images.forEach(image => { if (image) release(image) }); images.length = 0; sources.length = 0
+      imageJobs.forEach((url, image) => { image.onload = null; image.onerror = null; image.src = ''; URL.revokeObjectURL(url) }); imageJobs.clear()
       resolveDecoderReady(false); decoder?.terminate(); decoding.forEach(job => job.reject()); decoding.clear()
-      delete canvas.dataset.renderer; delete canvas.dataset.frame
+      delete canvas.dataset.renderer; delete canvas.dataset.frame; delete canvas.dataset.cachedFrames
       canvas.style.opacity = '0'
       copy.style.opacity = ''; copy.style.transform = ''
       shade.style.opacity = ''

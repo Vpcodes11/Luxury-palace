@@ -14,7 +14,7 @@ for (const [index, directory] of sequenceFolders.entries()) {
   const dir = join(publicRoot, 'optimized', directory)
   const entries = await readdir(dir, { withFileTypes: true })
   const images = entries
-    .filter((entry) => entry.isFile() && valid.has(extname(entry.name).toLowerCase()) && !/-mobile|-landscape/.test(entry.name) && (numberOf(entry.name) % 2 === 0 || numberOf(entry.name) === 79))
+    .filter((entry) => entry.isFile() && valid.has(extname(entry.name).toLowerCase()) && !/-mobile|-landscape/.test(entry.name) && numberOf(entry.name) >= 0 && numberOf(entry.name) <= 79)
     .sort((a, b) => numberOf(a.name) - numberOf(b.name) || a.name.localeCompare(b.name))
   if (!images.length) throw new Error(`No browser-readable frames found in public/${directory}.`)
   const urls = images.map((entry) => `/${relative(publicRoot, join(dir, entry.name)).split(sep).join('/')}`)

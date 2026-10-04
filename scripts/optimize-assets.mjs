@@ -14,7 +14,7 @@ for (const file of await readdir(join(publicRoot, 'campaign'))) {
 for (const folder of folders) {
   for (const file of await readdir(join(publicRoot, folder))) {
     const frame = Number(file.match(/\d+/)?.[0])
-    if (/\.(jpg|jpeg|png)$/i.test(file) && (frame % 2 === 0 || frame === 79)) jobs.push(`${folder}/${file}`)
+    if (/\.(jpg|jpeg|png)$/i.test(file) && frame >= 0 && frame <= 79) jobs.push(`${folder}/${file}`)
   }
 }
 async function scan(dir) {
