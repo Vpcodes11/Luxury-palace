@@ -109,7 +109,11 @@ section[id] { scroll-margin-top: 84px; }
 .gallery-dialog img { height: min(58dvh, 580px); object-fit: contain; background: #dad3c5; }
 .gallery-dialog figcaption { margin-top: 1rem; font: 1rem/1.4 var(--serif); }
 .gallery-dialog__controls { display: flex; align-items: center; justify-content: space-between; gap: 1rem; font-size: .8rem; }
-.residence-tour { padding: 7rem 5vw; display: grid; grid-template-columns: 1fr 2fr; gap: 4vw; align-items: center; }
+.residence-tour { padding: 7rem 5vw; }
+.tour-heading { display: grid; grid-template-columns: 1fr 1fr; column-gap: 6vw; align-items: end; margin-bottom: 2.5rem; }
+.tour-heading .eyebrow { grid-column: 1 / -1; }
+.tour-heading h2 { grid-column: 1; grid-row: 2 / 4; }
+.tour-heading > p:not(.eyebrow) { grid-column: 2; }
 .tour-heading h2 { font: 400 clamp(3rem, 5vw, 6rem)/.9 var(--serif); letter-spacing: -.045em; }
 .tour-heading > p:not(.eyebrow) { font: 1.1rem/1.6 var(--serif); }
 .tour-heading .tour-note { font: .75rem/1.6 var(--sans) !important; color: #c5bba9; }
@@ -118,11 +122,25 @@ section[id] { scroll-margin-top: 84px; }
 .tour-preview > img { height: 100%; object-fit: cover; filter: brightness(.7); }
 .tour-start { position: absolute; bottom: 2rem; left: 2rem; right: 2rem; padding: 1rem; color: var(--ink); background: var(--ivory); text-align: left; display: flex; justify-content: space-between; }
 .tour-placeholder { height: 580px; display: grid; place-items: center; background: #24241e; padding: 2rem; }
-.tour-canvas { height: 480px; background: #c4bba8; }
+.tour-preview-caption { position: absolute; top: 2rem; left: 2rem; color: #f5eedf; pointer-events: none; }
+.tour-preview-caption span { font: .65rem var(--sans); letter-spacing: .15em; }
+.tour-preview-caption p { font: 400 clamp(2rem, 3.2vw, 4rem)/1.05 var(--serif); margin-top: 1.2rem; }
+.tour-viewer { position: relative; overflow: hidden; border: 1px solid #504c41; }
+.tour-canvas { height: 600px; background: #687b8a; scroll-margin-top: 104px; }
 .tour-canvas canvas { display: block; width: 100%; height: 100%; }
+.tour-canvas canvas:focus-visible { outline: 2px solid #f5eedf; outline-offset: -4px; }
+.tour-scene-label { position: absolute; top: 1.4rem; left: 1.4rem; color: #f5eedf; pointer-events: none; text-shadow: 0 1px 8px #101a24; }
+.tour-scene-label span { display: block; font: .6rem var(--sans); letter-spacing: .16em; }
+.tour-scene-label strong { display: block; margin-top: .45rem; font: 400 1.8rem var(--serif); }
+.tour-atmosphere { position: absolute; bottom: 1.2rem; right: 1.2rem; display: flex; padding: .2rem; background: #182331d9; border: 1px solid #ffffff36; }
+.tour-atmosphere button { min-height: 44px; padding: .6rem .85rem; color: #f5eedf; font: .7rem var(--sans); }
+.tour-atmosphere button[aria-pressed='true'] { background: #f5eedf; color: #232b32; }
+.tour-loading { position: absolute; inset: 0; display: grid; place-items: center; color: #f5eedf; background: #202d3a; }
 .tour-controls { display: flex; flex-wrap: wrap; gap: .4rem; padding-top: 1rem; }
 .tour-controls button { min-height: 44px; min-width: 44px; padding: .65rem .8rem; border: 1px solid #726d60; font-size: .75rem; }
 .tour-controls button[aria-pressed='true'] { background: var(--ivory); color: var(--ink); }
+.tour-controls button > span { font-size: .55rem; margin-right: .5rem; opacity: .55; }
+.tour-view-detail { color: #e4dbc9; font: 1.05rem/1.45 var(--serif); margin: 1rem 0 .4rem; }
 .tour-instructions { font-size: .75rem; line-height: 1.5; color: #c5bba9; }
 .tour-fallback p { font-size: .85rem; line-height: 1.5; }
 .footer__contact { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; border-top: 1px solid #36362c; padding-top: 1.5rem; font-size: .85rem; }
@@ -131,9 +149,14 @@ section[id] { scroll-margin-top: 84px; }
 .footer__legal a { color: inherit; }
 @media(max-width: 760px) {
   .residence-tour { display: block; padding: 5rem 1.35rem; }
+  .tour-heading { display: block; margin-bottom: 0; }
   .tour-stage { margin-top: 3rem; }
   .tour-preview, .tour-placeholder { height: 430px; }
-  .tour-canvas { height: 380px; }
+  .tour-canvas { height: 420px; }
+  .tour-scene-label { top: 1rem; left: 1rem; }
+  .tour-scene-label strong { font-size: 1.5rem; }
+  .tour-controls button { padding: .65rem .6rem; }
+  .tour-preview-caption { top: 1.5rem; left: 1.5rem; }
   .gallery-dialog { padding: 1rem; }
   .gallery-dialog__controls > span { display: none; }
   .footer__contact { margin-top: 2rem; display: grid; gap: .7rem; }

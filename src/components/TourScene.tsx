@@ -1,109 +1,177 @@
 import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+import { createPalace } from '../lib/palaceScene'
 
 const viewpoints = [
-  { name: 'Estate', position: [19, 15, 24], target: [0, 1, 0] },
-  { name: 'Courtyard', position: [0, 4, 7], target: [0, 2, -5] },
-  { name: 'Grand salon', position: [0, 3, -7], target: [0, 2, 8] },
-  { name: 'Sea terrace', position: [0, 4, 16], target: [0, 2, 0] },
+  { name: 'Estate', position: [-11, 3.1, 12.5], target: [0, 3.9, -1.8], detail: 'The limestone loggia, opened toward the Mediterranean.' },
+  { name: 'Courtyard', position: [-10, 2.35, -1.1], target: [1, 3.25, -1.1], detail: 'A rhythm of turned columns, deep arches and bronze-framed doors.' },
+  { name: 'Grand salon', position: [10.6, 2.85, -7.1], target: [0, 3, -5.8], detail: 'Linen seating, carved stone tables and warm light behind the arcade.' },
+  { name: 'Sea terrace', position: [14, 2.7, 18], target: [0, 3.4, -1], detail: 'Still water holds the façade and the warmth of the rooms.' },
 ] as const
+type SceneAPI = { go: (index: number) => void; rotate: (angle: number) => void; light: (night: boolean) => void }
 
 export default function TourScene() {
   const mount = useRef<HTMLDivElement>(null)
-  const sceneApi = useRef<{ go: (index: number) => void; rotate: (angle: number) => void } | null>(null)
+  const sceneApi = useRef<SceneAPI | null>(null)
   const [failed, setFailed] = useState(false)
+  const [ready, setReady] = useState(false)
   const [view, setView] = useState(0)
+  const [night, setNight] = useState(true)
   useEffect(() => {
+    if (failed) return
     const host = mount.current!
     let renderer: THREE.WebGLRenderer
-    try { renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false }) } catch { setFailed(true); return }
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, window.innerWidth < 760 ? 1 : 1.5))
-    renderer.setClearColor('#c4bba8')
+    try { renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'low-power' }) } catch { setFailed(true); return }
+    const mobile = window.innerWidth < 760
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, mobile ? 1 : 1.5))
+    renderer.setClearColor('#687b8a')
     renderer.outputColorSpace = THREE.SRGBColorSpace
-    host.appendChild(renderer.domElement)
-    renderer.domElement.setAttribute('aria-label', 'Interactive conceptual residence model')
+    renderer.toneMapping = THREE.ACESFilmicToneMapping
+    renderer.toneMappingExposure = 1.12
+    renderer.shadowMap.enabled = true
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    renderer.shadowMap.autoUpdate = false
+    renderer.shadowMap.needsUpdate = true
+    const canvas = renderer.domElement
+    host.appendChild(canvas)
+    canvas.setAttribute('aria-label', 'Interactive palace with stone arcades, furnished salon and reflecting pool')
+    canvas.setAttribute('aria-describedby', 'palace-tour-instructions')
+    canvas.tabIndex = 0
+    canvas.style.touchAction = 'pan-y'
+    canvas.dataset.state = 'loading'; canvas.dataset.view = 'Estate'; canvas.dataset.lighting = 'night'
     const scene = new THREE.Scene()
-    scene.fog = new THREE.Fog('#c4bba8', 45, 110)
-    const camera = new THREE.PerspectiveCamera(45, 1, .1, 150)
-    const controls = new OrbitControls(camera, renderer.domElement)
-    controls.enableZoom = false
-    controls.enablePan = false
-    controls.maxPolarAngle = Math.PI * .49
-    const stone = new THREE.MeshStandardMaterial({ color: '#e2d4bb', roughness: .9 })
-    const roof = new THREE.MeshStandardMaterial({ color: '#b69b7b', roughness: 1 })
-    const dark = new THREE.MeshStandardMaterial({ color: '#4a4337', roughness: .75 })
-    const glass = new THREE.MeshStandardMaterial({ color: '#526864', metalness: .3, roughness: .2 })
-    const water = new THREE.MeshStandardMaterial({ color: '#4b777d', metalness: .45, roughness: .18 })
-    const green = new THREE.MeshStandardMaterial({ color: '#64724b', roughness: 1 })
-    const box = (x: number, y: number, z: number, w: number, h: number, d: number, material = stone) => {
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material)
-      mesh.position.set(x, y, z); scene.add(mesh); return mesh
+    const camera = new THREE.PerspectiveCamera(mobile ? 53 : 45, 1, .12, 600)
+    const controls = new OrbitControls(camera, canvas)
+    controls.enableZoom = false; controls.enablePan = false
+    controls.minPolarAngle = .18
+    controls.rotateSpeed = .55; controls.touches.TWO = THREE.TOUCH.ROTATE
+    canvas.style.touchAction = 'pan-y'
+    const updateControls = () => {
+      // Keep the camera above the paving without forcing eye-level views above their target.
+      const distance = Math.max(camera.position.distanceTo(controls.target), 1)
+      controls.maxPolarAngle = Math.acos(THREE.MathUtils.clamp((.95 - controls.target.y) / distance, -.98, .98))
+      controls.update()
     }
-    box(0, -.45, 0, 34, .8, 34, roof)
-    box(0, -.95, 0, 38, .2, 38, dark)
-    box(0, -1.15, 45, 180, .1, 85, water)
-    box(0, .02, 5, 6, .08, 12, water)
-    box(0, 1, -8, 22, 2, 5)
-    box(0, 4.7, -8, 22, 1.3, 5)
-    box(-9, 2.8, -1, 4, 5.6, 11)
-    box(9, 2.8, -1, 4, 5.6, 11)
-    box(0, 5.8, -8, 23, .45, 6, roof)
-    box(-9, 5.8, -1, 4.8, .45, 12, roof)
-    box(9, 5.8, -1, 4.8, .45, 12, roof)
-    // Repeated arcades leave the courtyard and salon open to explore.
-    for (let x = -9; x <= 9; x += 3) {
-      box(x, 2, -4.9, .45, 4, .5)
-      if (x < 9) {
-        const shape = new THREE.Shape()
-        shape.moveTo(-1.28, 0); shape.lineTo(-1.28, 1.65); shape.lineTo(1.28, 1.65); shape.lineTo(1.28, 0)
-        shape.absarc(0, 0, 1.28, 0, Math.PI, false)
-        const arch = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: .5, bevelEnabled: false, curveSegments: 12 }), stone)
-        arch.position.set(x + 1.5, 2.3, -5.15); scene.add(arch)
-      }
-      box(x, 3.45, -10.55, 1.5, 2.4, .08, glass)
+    let disposed = false, shadersReady = false, drawFrame = 0, cameraFrame = 0, lightFrame = 0, lightAmount = 1, lightDestination = 1, visible = true
+    let palace: ReturnType<typeof createPalace>
+    try { palace = createPalace(scene, mobile) } catch {
+      controls.dispose(); renderer.dispose(); canvas.remove(); setFailed(true); return
     }
-    for (const x of [-6, 6]) {
-      for (const z of [-1, 5, 11]) {
-        box(x, .3, z, 2, .6, 2, roof)
-        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(.11, .2, 2, 8), dark)
-        trunk.position.set(x, 1.6, z); scene.add(trunk)
-        const crown = new THREE.Mesh(new THREE.IcosahedronGeometry(1.25, 1), green)
-        crown.scale.set(1, .85, 1); crown.position.set(x, 3, z); scene.add(crown)
-      }
+    canvas.dataset.triangles = String(Math.round(palace.triangleCount)); canvas.dataset.renders = '0'
+    const render = () => {
+      if (disposed || !shadersReady || !visible || drawFrame) return
+      drawFrame = requestAnimationFrame(() => {
+        drawFrame = 0
+        if (disposed || !visible) return
+        try {
+          renderer.render(scene, camera)
+          canvas.dataset.renders = String(Number(canvas.dataset.renders) + 1)
+          canvas.dataset.drawCalls = String(renderer.info.render.calls)
+          setReady(true)
+        } catch { setFailed(true) }
+      })
     }
-    box(0, .8, -7.7, 5, .35, 1.2, roof)
-    box(-3, .65, -7.7, 1, 1.1, 2, dark)
-    box(3, .65, -7.7, 1, 1.1, 2, dark)
-    scene.add(new THREE.HemisphereLight('#fff4dc', '#686553', 2.2))
-    const sunlight = new THREE.DirectionalLight('#fff0d0', 3)
-    sunlight.position.set(-12, 25, 18); scene.add(sunlight)
-    const render = () => renderer.render(scene, camera)
-    const go = (index: number) => {
+    const stopCamera = () => { cancelAnimationFrame(cameraFrame); cameraFrame = 0; canvas.dataset.state = 'ready' }
+    const go = (index: number, immediate = false) => {
+      stopCamera()
       const point = viewpoints[index]
-      camera.position.set(point.position[0], point.position[1], point.position[2]); controls.target.set(point.target[0], point.target[1], point.target[2]); controls.update(); render()
+      const destination = new THREE.Vector3(...point.position), target = new THREE.Vector3(...point.target)
+      if (mobile && index === 0) destination.sub(target).multiplyScalar(1.1).add(target)
+      canvas.dataset.view = point.name
+      if (immediate || reduced) {
+        camera.position.copy(destination); controls.target.copy(target); updateControls()
+        canvas.dataset.state = 'ready'; render(); return
+      }
+      const from = camera.position.clone(), fromTarget = controls.target.clone(), start = performance.now()
+      canvas.dataset.state = 'moving'
+      const tick = (time: number) => {
+        if (disposed) return
+        const t = Math.min((time - start) / 1250, 1), eased = t * t * t * (t * (t * 6 - 15) + 10)
+        camera.position.lerpVectors(from, destination, eased); controls.target.lerpVectors(fromTarget, target, eased)
+        updateControls(); render()
+        if (t < 1) cameraFrame = requestAnimationFrame(tick)
+        else { cameraFrame = 0; canvas.dataset.state = 'ready' }
+      }
+      cameraFrame = requestAnimationFrame(tick)
     }
     const rotate = (angle: number) => {
+      stopCamera()
       const offset = camera.position.clone().sub(controls.target)
       offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), angle)
-      camera.position.copy(controls.target).add(offset); controls.update(); render()
+      camera.position.copy(controls.target).add(offset); updateControls(); render()
     }
-    sceneApi.current = { go, rotate }
-    controls.addEventListener('change', render)
-    const resize = () => { const { width, height } = host.getBoundingClientRect(); renderer.setSize(width, height); camera.aspect = width / Math.max(height, 1); camera.updateProjectionMatrix(); render() }
-    const observer = new ResizeObserver(resize); observer.observe(host)
+    const light = (toNight: boolean) => {
+      cancelAnimationFrame(lightFrame)
+      const from = lightAmount, to = Number(toNight), start = performance.now()
+      lightDestination = to
+      canvas.dataset.lighting = 'changing'
+      const tick = (time: number) => {
+        if (disposed) return
+        const t = reduced ? 1 : Math.min((time - start) / 1450, 1)
+        lightAmount = THREE.MathUtils.lerp(from, to, t * t * (3 - 2 * t))
+        palace.light(lightAmount); render()
+        if (t < 1) lightFrame = requestAnimationFrame(tick)
+        else { lightFrame = 0; canvas.dataset.lighting = toNight ? 'night' : 'day' }
+      }
+      lightFrame = requestAnimationFrame(tick)
+    }
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); rotate(event.key === 'ArrowLeft' ? -.18 : .18) }
+    }
+    canvas.addEventListener('keydown', onKey)
     const contextLost = (event: Event) => { event.preventDefault(); setFailed(true) }
-    renderer.domElement.addEventListener('webglcontextlost', contextLost)
-    go(0); resize()
-    return () => {
-      observer.disconnect(); controls.dispose(); sceneApi.current = null
-      scene.traverse(object => { if (object instanceof THREE.Mesh) object.geometry.dispose() })
-      ;[stone, roof, dark, glass, water, green].forEach(material => material.dispose())
-      renderer.domElement.removeEventListener('webglcontextlost', contextLost)
-      renderer.dispose(); renderer.domElement.remove()
+    canvas.addEventListener('webglcontextlost', contextLost)
+    controls.addEventListener('change', render); controls.addEventListener('start', stopCamera)
+    const resize = () => {
+      const { width, height } = host.getBoundingClientRect()
+      if (!width || !height) return
+      renderer.setSize(width, height); camera.aspect = width / height; camera.updateProjectionMatrix(); render()
     }
-  }, [])
+    const observer = new ResizeObserver(resize); observer.observe(host)
+    const visibility = new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting
+      if (visible) render()
+      else {
+        stopCamera(); cancelAnimationFrame(lightFrame); lightFrame = 0
+        lightAmount = lightDestination; palace.light(lightAmount)
+        canvas.dataset.lighting = lightAmount === 1 ? 'night' : 'day'
+      }
+    })
+    visibility.observe(host)
+    sceneApi.current = { go, rotate, light }
+    go(0, true); resize()
+    host.scrollIntoView({ behavior: reduced ? 'instant' : 'smooth', block: 'start' })
+    void renderer.compileAsync(scene, camera).then(() => {
+      if (disposed) return
+      shadersReady = true; renderer.shadowMap.needsUpdate = true; render()
+    }).catch(() => { if (!disposed) setFailed(true) })
+    return () => {
+      disposed = true; cancelAnimationFrame(drawFrame); cancelAnimationFrame(cameraFrame); cancelAnimationFrame(lightFrame)
+      observer.disconnect(); visibility.disconnect(); controls.dispose(); sceneApi.current = null
+      canvas.removeEventListener('keydown', onKey); canvas.removeEventListener('webglcontextlost', contextLost)
+      palace.dispose(); renderer.dispose(); canvas.remove()
+    }
+  }, [failed])
   return <div className="tour-interactive">
-    {failed ? <div className="tour-fallback"><img src="/optimized/campaign/aerial-estate.webp" srcSet="/optimized/campaign/aerial-estate-mobile.webp 800w, /optimized/campaign/aerial-estate.webp 1600w" sizes="(max-width: 760px) 100vw, 80vw" alt="Aerial view of the conceptual residence" /><p>The 3D view is unavailable on this device. Explore the photographic galleries below.</p></div> : <><div className="tour-canvas" ref={mount} /><div className="tour-controls" aria-label="Tour viewpoints">{viewpoints.map((point, index) => <button key={point.name} aria-pressed={view === index} onClick={() => { setView(index); sceneApi.current?.go(index) }}>{point.name}</button>)}<button aria-label="Rotate model left" onClick={() => sceneApi.current?.rotate(-Math.PI / 8)}>↶</button><button aria-label="Rotate model right" onClick={() => sceneApi.current?.rotate(Math.PI / 8)}>↷</button></div><p className="tour-instructions" aria-live="polite">{viewpoints[view].name} · Drag to look around. Use the buttons to change your perspective.</p></>}
+    {failed ? <div className="tour-fallback"><img src="/optimized/campaign/tour-palace.webp" srcSet="/optimized/campaign/tour-palace-mobile.webp 800w, /optimized/campaign/tour-palace.webp 1600w" sizes="(max-width: 760px) 100vw, 80vw" alt="The palace arcade and reflecting pool" /><p>The 3D view is unavailable on this device. Explore the photographic galleries below.</p></div> : <>
+      <div className="tour-viewer" aria-busy={!ready}>
+        <div className="tour-canvas" ref={mount} />
+        {!ready && <div className="tour-loading" role="status">Opening the residence…</div>}
+        <div className="tour-scene-label"><span>OMNIS / SPATIAL EXPERIENCE</span><strong>{viewpoints[view].name}</strong></div>
+        <div className="tour-atmosphere" role="group" aria-label="Time of day">
+          <button disabled={!ready} aria-pressed={!night} onClick={() => { setNight(false); sceneApi.current?.light(false) }}>Daylight</button>
+          <button disabled={!ready} aria-pressed={night} onClick={() => { setNight(true); sceneApi.current?.light(true) }}>Blue hour</button>
+        </div>
+      </div>
+      <div className="tour-controls" aria-label="Tour viewpoints">
+        {viewpoints.map((point, index) => <button key={point.name} disabled={!ready} aria-label={point.name} aria-pressed={view === index} onClick={() => { setView(index); sceneApi.current?.go(index) }}><span aria-hidden="true">0{index + 1}</span>{point.name}</button>)}
+        <button disabled={!ready} aria-label="Rotate model left" onClick={() => sceneApi.current?.rotate(-Math.PI / 8)}>↶</button>
+        <button disabled={!ready} aria-label="Rotate model right" onClick={() => sceneApi.current?.rotate(Math.PI / 8)}>↷</button>
+      </div>
+      <p className="tour-view-detail">{viewpoints[view].detail}</p>
+      <p id="palace-tour-instructions" className="tour-instructions" aria-live="polite">{viewpoints[view].name} · Drag to look around, or use the arrow keys. Choose a viewpoint and change the light.</p>
+    </>}
   </div>
 }

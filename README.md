@@ -9,7 +9,7 @@ OMNIS is a cinematic, editorial website concept for an ultra-luxury Mediterranea
 - Scroll-driven canvas hero built from image sequences rather than autoplay video
 - Finalized homepage Film 02, without film selectors
 - A scroll-controlled daylight-to-blue-hour transition with glowing villa interiors
-- On-demand interactive conceptual 3D estate with courtyard, salon and terrace viewpoints
+- Interactive reconstruction of Film 02's palace, with stone arcades, furnished interiors, a reflecting pool and daylight/blue-hour controls
 - Accessible photographic galleries for all three signature spaces
 - Responsive desktop and mobile compositions
 - Animated architectural, interior, signature-space, location, and enquiry chapters
@@ -40,7 +40,7 @@ The asset library contains ten source films. The finalized homepage exclusively 
 - Vite
 - GSAP and ScrollTrigger
 - HTML Canvas for frame-sequence rendering
-- Three.js for the lazily loaded architectural study
+- Three.js for the lazily loaded palace tour
 - Sharp for desktop/mobile WebP generation
 - Playwright for Chromium, Firefox and mobile WebKit verification
 
@@ -67,6 +67,14 @@ The build command compresses used assets into responsive WebP images, regenerate
 Film 02 begins in daylight, gradually cools into evening and finishes at blue hour with warm interiors. Scrolling back reverses the transition. Nine saved AI lighting references provide the evening illumination, transferred onto the original 1920×1080 source at WebP quality 82. Exposure interpolates in log space with quintic easing between 8% and 86% of the camera sequence, holding the opening daylight and final dusk. Original geometry and texture are preserved; coherent motion alignment and tracked foreground occlusion keep room lighting off passing columns. The relighting happens at build time and adds no live lighting or filter work while scrolling. Visitors load one 41-frame sequence, rather than separate day and night sequences. Reduced-motion and data-saver visitors receive the daylight arrival poster. See assets/hero-dusk-lighting/README.md for the saved references and generation prompt. Portrait phones receive a centered 608×1080 crop, and narrow landscape viewports receive 1280×720 frames. Profile selection updates on rotation and resize; these are responsive versions of the same film. The complete desktop, portrait and narrow landscape sequences weigh approximately 4.10, 1.40 and 2.52 MB respectively; only the active profile is loaded. A worker owns the transferred OffscreenCanvas and both decodes and paints compressed frames there, avoiding large per-frame surface copies on the page. The preloaded HTML poster remains visible until the first canvas frame is painted. Browsers without worker canvas support use HTML images and the regular canvas. The canvas uses inexpensive bilinear scaling; shading fades as the title disappears to reveal the architecture. `scripts/hero-settings.mjs` controls the source, encoding and release namespace. Change the release namespace when modifying frames to avoid serving previously cached imagery. A genuine 4K upgrade requires a higher-resolution master; the existing source is Full HD.
 
 The approved all-evening version is preserved at commit `194228d`. Revert the day-night experiment commit and rebuild to restore that complete treatment, including its poster, preload URLs and checks; no source imagery was removed.
+
+## Interactive palace
+
+The tour reconstructs the visible palace architecture from Film 02: six deep arched bays, turned stone columns, layered cornices, round medallions, a tiled hip roof, bronze-framed open doors and a furnished salon. A real planar reflection mirrors the façade in the pool; olive trees, cypress, terrace steps and the sea complete the setting. The preview photograph is the original final Film 02 frame, copied to `public/campaign/tour-palace.jpg` and optimized during the build.
+
+Estate, Courtyard, Grand salon and Sea terrace viewpoints use eased camera flights. Visitors can drag, rotate with buttons or arrow keys, and smoothly switch between daylight and blue hour. Reduced motion changes views immediately. The geometry follows the image's architectural language; dimensions and unseen rooms are illustrative rather than surveyed plans.
+
+The Three.js module downloads on interaction intent (hover, focus or activation of Explore in 3D); geometry and WebGL initialize only after activation. Static architecture is combined by material, leaves are instanced, shadow maps are cached, reflection resolution is bounded and mobile rendering uses a 1× pixel ratio. The scene renders only on changes and stops drawing offscreen. Loading status remains visible until the first paint; a palace photograph preserves the section if WebGL or the optional module fails.
 
 ## Verification and deployment
 

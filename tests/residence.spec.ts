@@ -179,7 +179,7 @@ test('3D loads on demand, supports viewpoint buttons and rotation', async ({ pag
   await expect(page.locator('.tour-canvas')).toHaveCount(0)
   await page.getByRole('button', { name: 'Explore in 3D' }).click()
   await expect(page.locator('.tour-interactive')).toBeVisible()
-  await expect(page.locator('.tour-canvas canvas, .tour-fallback')).toBeVisible()
+  await expect(page.locator('.tour-canvas canvas, .tour-fallback')).toBeVisible({ timeout: 15000 })
   const canvas = page.locator('.tour-canvas canvas')
   if (await canvas.count()) {
     await expect(canvas).toBeVisible()

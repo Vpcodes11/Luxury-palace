@@ -145,16 +145,26 @@ test('3D renders changed viewpoints and page navigation remains usable', async (
   await page.goto('/')
   expect(chunks).toEqual([])
   await page.getByRole('button', { name: 'Explore in 3D' }).click()
-  await expect(page.locator('.tour-canvas canvas, .tour-fallback')).toBeVisible()
+  await expect(page.locator('.tour-canvas canvas, .tour-fallback')).toBeVisible({ timeout: 15000 })
   expect(chunks).toHaveLength(1)
   const canvas = page.locator('.tour-canvas canvas')
   if (browserName === 'chromium') await expect(canvas).toBeVisible()
   if (await canvas.count()) {
+    await expect(canvas).toHaveAttribute('data-state', 'ready')
+    await expect.poll(() => canvas.getAttribute('data-renders').then(Number)).toBeGreaterThan(0)
+    const capture = async (name: string) => {
+      await page.evaluate(() => window.scrollTo({ top: document.querySelector('.tour-viewer')!.getBoundingClientRect().top + scrollY - 104, behavior: 'instant' }))
+      await page.locator('.tour-viewer').screenshot({ path: `test-results/palace-${name}-${test.info().project.name}.png` })
+    }
+    await capture('estate')
     const estate = await canvas.screenshot({ scale: 'css' })
     for (const name of ['Courtyard', 'Grand salon', 'Sea terrace']) {
       await page.getByRole('button', { name, exact: true }).click()
       await expect(page.getByRole('button', { name, exact: true })).toHaveAttribute('aria-pressed', 'true')
+      await expect(canvas).toHaveAttribute('data-state', 'ready')
+      await expect(canvas).toHaveAttribute('data-view', name)
       expect(Buffer.compare(estate, await canvas.screenshot({ scale: 'css' }))).not.toBe(0)
+      await capture(name.toLowerCase().replace(' ', '-'))
     }
     if (isMobile) {
       await page.getByRole('button', { name: 'Menu', exact: true }).click()
