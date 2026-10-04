@@ -163,27 +163,64 @@ section[id] { scroll-margin-top: 84px; }
   .footer__legal { flex-wrap: wrap; }
 }
 
-/* Introduction */
-.introduction { position: relative; z-index: 2; padding: 12rem 0 10rem; min-height: 130vh; }
-.intro__header { padding: 0 7vw; }
-.intro__title-row { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 7vw; align-items: end; margin-top: 3rem; }
-.intro__title-row h2 { margin: 0; font-family: var(--serif); font-size: clamp(3.4rem, 6.4vw, 7.2rem); line-height: .92; letter-spacing: -.045em; font-weight: 400; text-transform: uppercase; }
-.intro__title-row h2 em { display: inline-block; margin-left: 12%; text-transform: none; }
-.intro__title-row > p { margin: 0 0 .7rem; font-family: var(--serif); font-size: 1.2rem; line-height: 1.55; }
-.intro__image { position: relative; width: 88%; margin: 8rem auto 0; height: min(70vh, 760px); overflow: hidden; }
-.intro__image img { height: 100%; object-fit: cover; object-position: center 45%; }
-.image-caption { position: absolute; right: 0; bottom: -2.2rem; font-size: .57rem; letter-spacing: .15em; text-transform: uppercase; color: #625f57; }
+/* Residence & architecture */
+.introduction, .architecture { position: relative; padding: clamp(5rem, 8vw, 9rem) 6vw; }
+.introduction { z-index: 2; background: #f2eee5; }
+.chapter-line { display: flex; justify-content: space-between; gap: 1rem; padding-bottom: 1.2rem; border-bottom: 1px solid currentColor; font-size: .6rem; letter-spacing: .16em; text-transform: uppercase; color: #70685c; }
+.chapter-link { display: inline-flex; align-items: center; gap: 2rem; min-height: 44px; padding: .8rem 0; border-bottom: 1px solid currentColor; color: inherit; text-decoration: none; font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; }
+.chapter-link span { font-size: 1.05rem; transition: transform .3s ease; }
+.chapter-link:hover span { transform: translate(3px, -3px); }
+.residence-heading { display: grid; grid-template-columns: .7fr 2fr 1fr; gap: 3vw; align-items: end; padding: 4.5rem 0 5rem; }
+.residence-heading__aside { align-self: start; margin: .8rem 0 0; font-size: .63rem; line-height: 1.9; letter-spacing: .1em; text-transform: uppercase; color: #70685c; }
+.residence-heading h2 { margin: 0; font-family: var(--serif); font-size: clamp(4rem, 7.8vw, 8.5rem); font-weight: 400; letter-spacing: -.055em; line-height: .93; }
+.residence-heading h2 em { display: inline-block; margin-left: .4em; color: #84725e; }
+.residence-heading__copy p { max-width: 23rem; margin: 0 0 1.2rem; font-family: var(--serif); font-size: 1.1rem; line-height: 1.6; color: #5a5145; }
+.residence-composition { display: grid; grid-template-columns: minmax(0, 2.35fr) minmax(0, 1fr); gap: 5vw; align-items: start; }
+.residence-composition figure { margin: 0; }
+.residence-estate__image { position: relative; overflow: hidden; aspect-ratio: 4 / 3; }
+.residence-estate__image img { position: absolute; inset: 0; height: 100%; object-fit: cover; object-position: 55% center; }
+.residence-composition figcaption { display: flex; justify-content: space-between; gap: .7rem; padding-top: 1rem; font-size: .56rem; letter-spacing: .1em; text-transform: uppercase; color: #70685c; }
+.residence-estate__statement { margin: 2.8rem 0 0 12%; font-family: var(--serif); font-size: clamp(2.4rem, 4.2vw, 4.5rem); letter-spacing: -.035em; line-height: 1.05; }
+.residence-estate__statement em { color: #84725e; }
+.residence-detail { margin-top: 7rem; }
+.residence-detail__image { position: relative; aspect-ratio: 3 / 4; overflow: hidden; }
+.residence-detail__image img { position: absolute; inset: 0; height: 100%; object-fit: cover; object-position: 67% center; }
+.residence-detail > p { max-width: 18rem; margin: 2.2rem 0 0; font-family: var(--serif); font-size: 1.2rem; line-height: 1.5; color: #5a5145; }
+.residence-values { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-top: 4.5rem; padding-top: 1.3rem; border-top: 1px solid var(--line); font-size: .58rem; letter-spacing: .15em; text-transform: uppercase; color: #70685c; }
+.residence-values span:nth-child(2) { text-align: center; }
+.residence-values span:last-child { text-align: right; }
 
-/* Architecture */
-.architecture { position: relative; min-height: 150vh; padding: 8rem 4vw 12rem; overflow: hidden; }
-.architecture__topline { display: flex; justify-content: space-between; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,.2); font-size: .6rem; text-transform: uppercase; letter-spacing: .2em; }
-.architecture__word { position: relative; z-index: 2; margin: 8rem 0 -5rem 3vw; font-family: var(--serif); font-size: clamp(4.2rem, 9.8vw, 11rem); line-height: .78; letter-spacing: -.06em; font-weight: 400; text-transform: uppercase; pointer-events: none; }
-.architecture__word em { display: inline-block; margin-left: .28em; font-size: .67em; text-transform: none; color: #c8bcaa; }
-.architecture__visual { width: 78vw; height: 82vh; margin-left: auto; overflow: hidden; will-change: clip-path; }
-.architecture__visual img { height: 100%; object-fit: cover; }
-.architecture__note { width: 380px; max-width: 85vw; display: grid; grid-template-columns: 38px 1fr; gap: 1.2rem; margin: 3rem 0 0 8vw; }
-.architecture__note span { font-size: .58rem; letter-spacing: .1em; color: #a99f90; }
-.architecture__note p { margin: 0; font-family: var(--serif); font-size: 1.2rem; line-height: 1.5; color: #d9d3c8; }
+.architecture { color: #eee8dd; background: #1c1e1b; }
+.architecture .chapter-line { color: #b3aa9b; border-color: #4c4c43; }
+.architecture-heading { display: grid; grid-template-columns: 2.35fr 1fr; gap: 5vw; align-items: end; margin: 4.5rem 0 3.5rem; }
+.architecture-heading h2 { margin: 0; font-family: var(--serif); font-size: clamp(3.5rem, 6.2vw, 7rem); font-weight: 400; letter-spacing: -.045em; line-height: 1.03; }
+.architecture-heading h2 em { color: #c1ac8e; }
+.architecture-heading > p { max-width: 23rem; margin: 0 0 .6rem; font-family: var(--serif); font-size: 1.15rem; line-height: 1.6; color: #bfb7aa; }
+.architecture-gallery { display: grid; grid-template-columns: minmax(0, 2.8fr) minmax(0, 1fr); gap: 5vw; }
+.architecture-tabs { display: flex; gap: 2.5rem; margin-bottom: 1.4rem; border-bottom: 1px solid #4c4c43; }
+.architecture-tabs button { position: relative; display: flex; gap: .8rem; align-items: center; min-height: 48px; padding: .5rem 0 1rem; color: #b5ad9f; font-family: var(--serif); font-size: 1.3rem; }
+.architecture-tabs button > span { font-family: var(--sans); font-size: .55rem; letter-spacing: .12em; }
+.architecture-tabs button[aria-selected="true"] { color: #f1e9db; }
+.architecture-tabs button i { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: #c1ac8e; transform: scaleX(0); transform-origin: left; transition: transform .3s ease; }
+.architecture-tabs button[aria-selected="true"] i { transform: scaleX(1); }
+.architecture-study__image { position: relative; aspect-ratio: 16 / 11; overflow: hidden; background: #30332c; }
+.architecture-study__image img { position: absolute; inset: 0; height: 100%; object-fit: cover; opacity: 0; transition: opacity .65s ease; }
+.architecture-study__image img.is-visible { opacity: 1; }
+.architecture-study__caption { display: grid; grid-template-columns: 65px minmax(0, 1fr); gap: 2rem; margin-top: 2rem; min-height: 9rem; }
+.architecture-study__number { padding-top: .5rem; color: #b3aa9b; font-size: .58rem; letter-spacing: .1em; }
+.architecture-study__caption h3 { margin: 0 0 .8rem; font-family: var(--serif); font-size: clamp(1.7rem, 2.3vw, 2.5rem); line-height: 1.1; font-weight: 400; letter-spacing: -.02em; }
+.architecture-study__caption p { max-width: 33rem; margin: 0; color: #bfb7aa; font-family: var(--serif); font-size: 1.05rem; line-height: 1.55; }
+.architecture-detail { padding-top: 7rem; }
+.architecture-detail figure { margin: 0; }
+.architecture-detail__image { position: relative; aspect-ratio: 3 / 4; overflow: hidden; }
+.architecture-detail__image img { position: absolute; inset: 0; height: 100%; object-fit: cover; object-position: 43% center; }
+.architecture-detail figcaption { margin-top: 1.1rem; color: #b3aa9b; font-size: .55rem; letter-spacing: .13em; line-height: 1.9; text-transform: uppercase; }
+.architecture-detail__quote { margin: 2.5rem 0 1.5rem; font-family: var(--serif); font-size: clamp(1.8rem, 2.5vw, 3rem); letter-spacing: -.035em; line-height: 1.1; }
+.architecture-detail__quote em { color: #c1ac8e; }
+.architecture-detail .chapter-link { color: #ddd2c1; gap: 1.5rem; }
+.architecture-closing { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-top: 4.5rem; padding-top: 1.5rem; border-top: 1px solid #4c4c43; }
+.architecture-closing > span { color: #b3aa9b; font-size: .56rem; letter-spacing: .16em; }
+.architecture-closing p { margin: 0; font-family: var(--serif); font-size: 1.3rem; font-style: italic; color: #c1ac8e; }
 
 /* Interior */
 .interiors { padding: 8rem 5vw 8rem; overflow: clip; }
@@ -296,8 +333,8 @@ section[id] { scroll-margin-top: 84px; }
 
 @media (max-width: 1024px) {
   .desktop-nav { gap: 1.4rem; }
-  .intro__title-row { grid-template-columns: 1fr 240px; }
-  .architecture__visual { width: 88vw; }
+  .residence-heading { grid-template-columns: .6fr 1.6fr 1fr; gap: 2vw; }
+  .residence-heading h2 { font-size: 7.4vw; }
   .interiors__intro { grid-template-columns: .7fr 2.3fr; }
   .interiors__lede { grid-column: 2; width: 70%; margin-left: auto; }
   .interior-folio, .interior-folio--2 { grid-template-columns: minmax(0, 1.25fr) minmax(280px, .75fr); }
@@ -339,22 +376,43 @@ section[id] { scroll-margin-top: 84px; }
   .hero__variants a { display: inline-flex; min-width: 1.65rem; min-height: 2rem; align-items: center; justify-content: center; }
   .hero__index { right: 1.35rem; bottom: 1.5rem; }
 
-  .introduction { padding: 8rem 0 7rem; min-height: 0; }
-  .intro__header { padding: 0 1.35rem; }
-  .intro__title-row { display: block; margin-top: 2.2rem; }
-  .intro__title-row h2 { font-size: clamp(3rem, 13.5vw, 4.8rem); line-height: .89; }
-  .intro__title-row h2 em { margin-left: 0; }
-  .intro__title-row > p { width: 82%; margin: 3rem 0 0 auto; font-size: 1rem; }
-  .intro__image { width: calc(100% - 2.7rem) !important; height: 54vh; min-height: 390px; margin-top: 5rem; }
-  .image-caption { bottom: -1.8rem; }
-
-  .architecture { min-height: 0; padding: 6rem 1.35rem 8rem; }
-  .architecture__word { margin: 5rem 0 -2rem; font-size: 13.5vw; line-height: .82; }
-  .architecture__word em { margin-left: .05em; }
-  .architecture__visual { width: 100%; height: 67vh; min-height: 500px; }
-  .architecture__visual img { object-position: 48% center; }
-  .architecture__note { margin: 2.5rem 0 0 12%; width: 80%; }
-  .architecture__note p { font-size: 1.05rem; }
+  .introduction, .architecture { padding: 5rem 1.35rem; }
+  .chapter-line { font-size: .52rem; letter-spacing: .12em; line-height: 1.6; }
+  .chapter-line > span:last-child { max-width: 9rem; text-align: right; }
+  .residence-heading { grid-template-columns: 1fr; gap: 2rem; padding: 2.5rem 0 3rem; }
+  .residence-heading__aside { margin: 0; }
+  .residence-heading h2 { font-size: clamp(3.7rem, 15vw, 6rem); }
+  .residence-heading__copy { max-width: 24rem; margin-left: 12%; }
+  .residence-heading__copy p { font-size: 1.05rem; }
+  .chapter-link { font-size: .58rem; }
+  .residence-composition { grid-template-columns: 1fr; gap: 2.5rem; }
+  .residence-estate__image { aspect-ratio: 4 / 5; }
+  .residence-estate__image img { object-position: 60% center; }
+  .residence-estate__statement { margin: 2rem 0 0; font-size: clamp(2.5rem, 10vw, 4rem); }
+  .residence-detail { width: 68%; margin: 0 0 0 auto; }
+  .residence-composition figcaption { font-size: .5rem; line-height: 1.6; }
+  .residence-detail figcaption > span:last-child { white-space: nowrap; }
+  .residence-detail > p { margin-top: 1.5rem; font-size: 1.05rem; }
+  .residence-values { margin-top: 3rem; font-size: .5rem; letter-spacing: .08em; line-height: 1.7; }
+  .architecture-heading { grid-template-columns: 1fr; gap: 2rem; margin: 2.5rem 0; }
+  .architecture-heading h2 { font-size: clamp(2.65rem, 11.8vw, 4.5rem); }
+  .architecture-heading > p { max-width: 25rem; margin-left: 12%; font-size: 1.05rem; }
+  .architecture-gallery { grid-template-columns: 1fr; gap: 3rem; }
+  .architecture-tabs { gap: 0; justify-content: space-between; }
+  .architecture-tabs button { gap: .5rem; font-size: 1.2rem; }
+  .architecture-study__image { aspect-ratio: 4 / 5; }
+  .architecture-study__image img { object-position: 50% center; }
+  .architecture-study__caption { grid-template-columns: 1fr; gap: 1rem; min-height: 13rem; margin-top: 1.5rem; }
+  .architecture-study__caption h3 { font-size: 1.8rem; }
+  .architecture-study__caption p { font-size: 1rem; }
+  .architecture-detail { display: grid; grid-template-columns: 1fr 1.3fr; column-gap: 1.5rem; align-items: center; padding-top: 0; }
+  .architecture-detail figure { grid-row: 1 / 3; }
+  .architecture-detail__quote { margin: 0; font-size: clamp(1.6rem, 7vw, 2.3rem); align-self: end; }
+  .architecture-detail .chapter-link { align-self: start; justify-self: start; gap: .6rem; margin-top: 1rem; font-size: .5rem; letter-spacing: .08em; }
+  .architecture-detail figcaption { font-size: .48rem; letter-spacing: .08em; }
+  .architecture-closing { margin-top: 3rem; flex-wrap: wrap; }
+  .architecture-closing p { margin-left: auto; font-size: 1.15rem; }
+  .architecture-closing > span:last-child { display: none; }
 
   .interiors { padding: 8rem 1.35rem 6rem; }
   .interiors__intro { display: block; margin-bottom: 5rem; }
@@ -421,7 +479,7 @@ section[id] { scroll-margin-top: 84px; }
   .hero__variants { right: .7rem; gap: .25rem; }
   .hero__variants > span { display: none; }
   .hero__index { right: 1.1rem; }
-  .intro__header, .architecture, .interiors, .signature { padding-left: 1.1rem; padding-right: 1.1rem; }
+  .introduction, .architecture, .interiors, .signature { padding-left: 1.1rem; padding-right: 1.1rem; }
   .location, .enquiry { padding-left: 1.1rem; padding-right: 1.1rem; }
   .location__coordinates, .location__metadata { left: 1.1rem; right: 1.1rem; }
   .enquiry__form-wrap { padding-inline: 1rem; }
@@ -446,6 +504,5 @@ section[id] { scroll-margin-top: 84px; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
-  .architecture__visual { clip-path: none !important; }
   .hero__copy { opacity: 1 !important; transform: translateY(-42%) !important; }
 }

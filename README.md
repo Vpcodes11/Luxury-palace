@@ -12,6 +12,8 @@ OMNIS is a cinematic, editorial website concept for an ultra-luxury Mediterranea
 - Interactive reconstruction of Film 02's palace, with stone arcades, furnished interiors, a reflecting pool and daylight/blue-hour controls
 - Accessible photographic galleries for all three signature spaces
 - Responsive desktop and mobile compositions
+- An ivory Residence chapter with asymmetrical estate/arcade photography and editorial captions
+- A charcoal Architecture gallery with crossfading Form, Material and Light studies, keyboard navigation and reserved image space
 - Animated architectural, interior, signature-space, location, and enquiry chapters
 - Accessible navigation, reduced-motion support, semantic content, and keyboard-friendly controls
 - An 80-frame Film 02 sequence with preloaded poster, bounded decoding and native sticky scrolling
